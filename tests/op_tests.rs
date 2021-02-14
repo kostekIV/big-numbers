@@ -9,6 +9,7 @@ macro_rules! expr_identity {
 macro_rules! op_test {
     ($func:ident, $path:literal, $op:tt) => {
         #[test]
+        #[ignore]
         fn $func() -> io::Result<()> {
             let file = File::open($path)?;
             let reader = BufReader::new(file);

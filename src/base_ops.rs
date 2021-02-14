@@ -1,7 +1,9 @@
+use crate::asm_ops::add_two_slices;
+
 
 #[inline]
 fn add_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
-    let value = x  + y;
+    let value = x + y;
     let carry = if value >= base {1} else {0};
 
     (carry, value - base * carry)
@@ -131,7 +133,11 @@ pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
 
     let size = usize::max(l.len(), r.len());
     dst.resize(size + 1, 0);
-    add_to(&mut dst, l, r, base);
+
+    unsafe {
+        add_two_slices(l.as_ptr(), r.as_ptr(), dst.as_mut_ptr(), base, l.len() as u64, r.len() as u64);
+    }
+    // add_to(&mut dst, l, r, base);
 
     if *dst.last().unwrap() == 0 {
         dst.pop();

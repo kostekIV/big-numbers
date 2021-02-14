@@ -1,19 +1,18 @@
-use crate::base_ops::{add_to, mul, new_repr};
+use crate::base_ops::{add, mul, new_repr};
 
-pub fn convert(from: u64, to: u64, numbers: &Vec<u64>) -> Vec<u64> {
+pub(crate) fn convert(from: u64, to: u64, numbers: &[u64]) -> Vec<u64> {
     let mut new_vec = Vec::new();
     let bv = new_repr(from, to);
 
     for number in numbers {
         let v = new_repr(*number, to);
-        new_vec = mul(&new_vec, &bv, to);
-        add_to(&mut new_vec, &v, to);
+        new_vec = add(&mul(&new_vec, &bv, to), &v, to);
     }
 
-    return new_vec;
+    new_vec
 }
 
-pub fn convert_from_string(from: u64, to: u64, number: String) -> Vec<u64> {
+pub(crate) fn convert_from_string(from: u64, to: u64, number: String) -> Vec<u64> {
     let numbers: Vec<_> = number
             .chars()
             .map(|x| x.to_digit(from as u32))

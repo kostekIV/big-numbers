@@ -1,14 +1,11 @@
-use crate::bint::Bint;
-
 
 #[inline]
 fn add_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
-    let value = x  + y ;
+    let value = x  + y;
     let carry = if value >= base {1} else {0};
 
     (carry, value - base * carry)
 }
-
 
 #[inline]
 fn sub_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
@@ -24,7 +21,6 @@ fn sub_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
     (carry, value)
 }
 
-
 #[inline]
 fn mul_with_base(x: u64, y: u64, carry: u64, base: u64) -> (u64, u64) {
     let value: u64 = x * y + carry;
@@ -33,56 +29,47 @@ fn mul_with_base(x: u64, y: u64, carry: u64, base: u64) -> (u64, u64) {
     (carry, value - base * carry)
 }
 
-pub fn add_to(dest: &mut Vec<u64>, src: &Vec<u64>, base: u64) {
-    if src.len() == 0 {
-        return;
-    }
-
-    let size = usize::max(dest.len(), src.len());
-    dest.reserve(size);
+fn add_to(dest: &mut[u64], l: &[u64], r: &[u64], base: u64) {
     let mut carry = 0;
 
+    let size = l.len();
     for i in 0..size {
-        if i < dest.len() && i < src.len() {
-            let (c1, limb) = add_with_base(dest[i], src[i], base);
+        if i < l.len() && i < r.len() {
+            let (c1, limb) = add_with_base(l[i], r[i], base);
             let (c2, limb) = add_with_base(limb, carry, base);
             dest[i] = limb;
             carry = c1 + c2;
-        } else if i >= src.len() {
-            let (c, limb) = add_with_base(dest[i], carry, base);
+        } else if i >= r.len() {
+            let (c, limb) = add_with_base(l[i], carry, base);
             dest[i] = limb;
-            carry = c;
-
-            if carry == 0 {
-                return;
-            }
-        } else {
-            let (c, limb) = add_with_base(src[i], carry, base);
-            dest.push(limb);
             carry = c;
         }
     }
 
     if carry != 0 {
-        dest.push(carry);
+        dest[size] = carry;
     }
 }
 
-pub fn add(left: &Vec<u64>, right: &Vec<u64>, base: u64) -> Vec<u64> {
-    if left.len() > right.len() {
-        let mut dst = left.to_vec();
-        add_to(&mut dst, right, base);
+fn sub_to(dest: &mut[u64], l: &[u64], r: &[u64], base: u64) {
+    let mut carry = 0;
 
-        dst
-    } else {
-        let mut dst = right.to_vec();
-        add_to(&mut dst, left, base);
-
-        dst
+    let size = l.len();
+    for i in 0..size {
+        if i < l.len() && i < r.len() {
+            let (c1, limb) = sub_with_base(l[i], r[i], base);
+            let (c2, limb) = sub_with_base(limb, carry, base);
+            dest[i] = limb;
+            carry = c1 + c2;
+        } else if i >= r.len() {
+            let (c, limb) = sub_with_base(l[i], carry, base);
+            dest[i] = limb;
+            carry = c;
+        }
     }
 }
 
-fn mul_helper(left: &Vec<u64>, right: &Vec<u64>, base: u64) -> Vec<u64> {
+fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     let (m, n) = (left.len(), right.len());
     if m == 1 && left[0] == 1 {
         return right.to_vec();
@@ -103,7 +90,7 @@ fn mul_helper(left: &Vec<u64>, right: &Vec<u64>, base: u64) -> Vec<u64> {
         for j in 0..m {
             let (c1, limb) = mul_with_base(left[j], right[i], carry, base);
             let (c2, limb) = add_with_base(repr[i + j], limb, base);
-            repr[i +j] = limb;
+            repr[i + j] = limb;
             carry = c1 + c2;
         }
 
@@ -112,6 +99,7 @@ fn mul_helper(left: &Vec<u64>, right: &Vec<u64>, base: u64) -> Vec<u64> {
             let (c, limb) = add_with_base(repr[i + m + k], carry, base);
             repr[i + m + k] = limb;
             carry = c;
+            k += 1;
         }
 
     }
@@ -127,7 +115,85 @@ fn mul_helper(left: &Vec<u64>, right: &Vec<u64>, base: u64) -> Vec<u64> {
     repr
 }
 
-pub fn mul(left: &Vec<u64>, right: &Vec<u64>, base: u64) -> Vec<u64> {
+pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
+    let mut dst = Vec::new();
+    let l: &[u64];
+    let r: &[u64];
+
+
+    if left.len() > right.len() {
+        l = left;
+        r = right;
+    } else {
+        l = right;
+        r = left;
+    }
+
+    let size = usize::max(l.len(), r.len());
+    dst.resize(size + 1, 0);
+    add_to(&mut dst, l, r, base);
+
+    if *dst.last().unwrap() == 0 {
+        dst.pop();
+    }
+    dst
+}
+
+#[allow(clippy::comparison_chain)]
+pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
+    let mut dst = Vec::new();
+    let mut sign = 0;
+    let mut l = left;
+    let mut r = right;
+
+    if left.len() > right.len() {
+        l = left;
+        r = right;
+        sign = 1;
+    } else if left.len() < right.len() {
+        l = right;
+        r = left;
+        sign = -1;
+    } else {
+        for i in (0..left.len()).rev() {
+            if left[i] > right[i] {
+                l = &left[0..=i];
+                r = &right[0..=i];
+                sign = 1;
+                break;
+            } else if left[i] < right[i] {
+                l = &right[0..=i];
+                r = &left[0..=i];
+                sign = -1;
+                break;
+            }
+        }
+
+        if sign == 0 {
+            return (0, dst);
+        }
+    }
+
+    let size = usize::max(l.len(), r.len());
+    dst.resize(size, 0);
+    sub_to(&mut dst, l, r, base);
+
+    while let Some(v) = dst.last() {
+        if *v == 0 {
+            dst.pop();
+        } else {
+            break;
+        }
+    }
+
+    if dst.is_empty() {
+        sign = 0;
+    }
+
+    (sign, dst)
+}
+
+pub(crate) fn mul(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     if left.len() > right.len() {
         mul_helper(left, right, base)
     } else {
@@ -135,7 +201,7 @@ pub fn mul(left: &Vec<u64>, right: &Vec<u64>, base: u64) -> Vec<u64> {
     }
 }
 
-pub fn new_repr(value: u64, base: u64) -> Vec<u64> {
+pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
     let mut repr = Vec::new();
     let mut value = value;
     while value >= base {
@@ -226,6 +292,36 @@ mod tests {
         let c = Vec::from([0, 0, 0, 0, 0, 1]);
 
         assert_eq!(c, add(&a, &b, 10));
+    }
+
+    #[test]
+    fn sub_reversed_digits_even_sizes() {
+        let a = Vec::from([9, 9, 2, 8, 9]);
+        let b = Vec::from([1, 2, 2, 8, 9]);
+
+        let c = (1, Vec::from([8, 7]));
+
+        assert_eq!(c, sub(&a, &b, 10));
+    }
+
+    #[test]
+    fn sub_reversed_digits_not_even_sizes() {
+        let a = Vec::from([9]);
+        let b = Vec::from([1, 9, 9, 9, 9]);
+
+        let c = (-1, Vec::from([2, 8, 9, 9, 9]));
+
+        assert_eq!(c, sub(&a, &b, 10));
+    }
+
+    #[test]
+    fn sub_reversed_digits_not_even_sizes2() {
+        let a = Vec::from([9, 8, 2]);
+        let b = Vec::from([1, 9, 9, 9, 9]);
+
+        let c = (-1, Vec::from([2, 0, 7, 9, 9]));
+
+        assert_eq!(c, sub(&a, &b, 10));
     }
 
     #[test]

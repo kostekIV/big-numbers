@@ -2,59 +2,33 @@ use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use big_numbers::bint::Bint;
 
-
-#[test]
-fn mul_test() -> io::Result<()> {
-    let file = File::open("./tests/mul_test.csv")?;
-    let reader = BufReader::new(file);
-    let base = u64::pow(2, 32);
-
-    for line in reader.lines() {
-        if let Ok(abr) = line {
-            let v: Vec<&str> = abr.split(',').collect();
-
-            let a = Bint::from((10u64, base, v[0]));
-            let b = Bint::from((10u64, base, v[1]));
-
-            assert_eq!(v[2], (&a * &b).to_string());
-        }
-    }
-    Ok(())
+macro_rules! expr_identity {
+    ($e:expr) => { $e }
 }
 
-#[test]
-fn add_test() -> io::Result<()> {
-    let file = File::open("./tests/add_test.csv")?;
-    let reader = BufReader::new(file);
-    let base = u64::pow(2, 32);
-
-    for line in reader.lines() {
-        if let Ok(abr) = line {
-            let v: Vec<&str> = abr.split(',').collect();
-
-            let a = Bint::from((10u64, base, v[0]));
-            let b = Bint::from((10u64, base, v[1]));
-
-            assert_eq!(v[2], (&a + &b).to_string());
+macro_rules! op_test {
+    ($func:ident, $path:literal, $op:tt) => {
+        #[test]
+        fn $func() -> io::Result<()> {
+            let file = File::open($path)?;
+            let reader = BufReader::new(file);
+            let base = u64::pow(2, 32);
+        
+            for line in reader.lines() {
+                if let Ok(abr) = line {
+                    let v: Vec<&str> = abr.split(',').collect();
+        
+                    let a = Bint::from((10u64, base, v[0]));
+                    let b = Bint::from((10u64, base, v[1]));
+        
+                    assert_eq!(v[2], expr_identity!((&a $op &b).to_string()));
+                }
+            }
+            Ok(())
         }
     }
-    Ok(())
 }
-#[test]
-fn sub_test() -> io::Result<()> {
-    let file = File::open("./tests/sub_test.csv")?;
-    let reader = BufReader::new(file);
-    let base = u64::pow(2, 32);
 
-    for line in reader.lines() {
-        if let Ok(abr) = line {
-            let v: Vec<&str> = abr.split(',').collect();
-
-            let a = Bint::from((10u64, base, v[0]));
-            let b = Bint::from((10u64, base, v[1]));
-
-            assert_eq!(v[2], (&a - &b).to_string());
-        }
-    }
-    Ok(())
-}
+op_test!(add_test, "./tests/add_test.csv", +);
+op_test!(sub_test, "./tests/sub_test.csv", -);
+op_test!(mul_test, "./tests/mul_test.csv", *);

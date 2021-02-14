@@ -5,9 +5,23 @@ n = 500
 
 m = 10 ** 1000
 
-for i in range(n):
-    a, b = randint(m // 10 ** 100, m), randint(m // 10 ** 100, m)
+files = [
+    "mul_test.csv",
+    "add_test.csv",
+    "sub_test.csv"
+]
 
-    print(f"{a},{b},{a + b}")
+ops = [
+    lambda x,y: x * y,
+    lambda x,y: x + y,
+    lambda x,y: x - y,
+]
+
+for op, fi in zip(ops, files):
+    with open(fi, "w") as f:
+        for i in range(n):
+            a, b = randint(-m, m), randint(-m, m)
+
+            print(f"{a},{b},{op(a, b)}", file=f)
 
 

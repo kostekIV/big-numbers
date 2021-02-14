@@ -1,11 +1,7 @@
-extern crate num_traits;
-
 pub mod bint;
 
 mod base_ops;
 mod conversions;
-
-
 
 #[cfg(test)]
 mod tests {

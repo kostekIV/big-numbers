@@ -19,3 +19,5 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Run extensive tests in release mode
+      run: cargo test --verbose --release -- --ignored

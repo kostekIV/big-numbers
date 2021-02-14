@@ -1,4 +1,4 @@
-pub mod bint;
+pub mod int;
 
 mod base_ops;
 mod conversions;

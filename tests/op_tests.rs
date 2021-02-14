@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
-use big_numbers::bint::Bint;
+use big_numbers::int::Int;
 
 macro_rules! expr_identity {
     ($e:expr) => { $e }
@@ -18,8 +18,8 @@ macro_rules! op_test {
                 if let Ok(abr) = line {
                     let v: Vec<&str> = abr.split(',').collect();
         
-                    let a = Bint::from((10u64, base, v[0]));
-                    let b = Bint::from((10u64, base, v[1]));
+                    let a = Int::from((10u64, base, v[0]));
+                    let b = Int::from((10u64, base, v[1]));
         
                     assert_eq!(v[2], expr_identity!((&a $op &b).to_string()));
                 }

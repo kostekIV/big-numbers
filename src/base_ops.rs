@@ -1,4 +1,4 @@
-use crate::asm_ops::add_two_slices;
+use crate::asm_ops::{add_two_slices, sub_two_slices};
 
 
 #[inline]
@@ -182,7 +182,11 @@ pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
 
     let size = usize::max(l.len(), r.len());
     dst.resize(size, 0);
-    sub_to(&mut dst, l, r, base);
+
+    unsafe {
+        sub_two_slices(l.as_ptr(), r.as_ptr(), dst.as_mut_ptr(), base, l.len() as u64, r.len() as u64);
+    }
+    // sub_to(&mut dst, l, r, base);
 
     while let Some(v) = dst.last() {
         if *v == 0 {

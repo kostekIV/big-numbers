@@ -19,11 +19,11 @@ add_two_slices:
         cmp r9, r10
         jle .for_end
 
-            ## add from first slice
+            ## add from the first slice
             mov r11, [rdi]
             add [rdx], r11
 
-            ## add from second slice if index under it len
+            ## add from the second slice
             mov r11, [rsi]
             add [rdx], r11
 
@@ -43,6 +43,7 @@ add_two_slices:
         jmp .for_begin
     .for_end:
 
+    ## loop only through bigger slice
     .for_one_slice_begin:  ## r10 = r9, r10 < r8, r10++
         cmp r8, r10
         jle .for_one_slice_end

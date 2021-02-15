@@ -15,6 +15,7 @@ mul_two_slices:
     push r14
     push r15
 
+    ## store address of dest in r15 
     lea r15, [rdx]
 
     xor r10, r10
@@ -34,24 +35,30 @@ mul_two_slices:
             mov rax, [rdi + 8*r10]
             mov r14, [rsi + 8*r11]
 
-            mul r14
+            mul r14             ## rax = a[i] * b[j]
             xor rdx, rdx
-            div rcx
+            div rcx             ## rax = a[i] * b[j] / base, rdx = a[i] * b[j] % base
 
-            add rdx, r12
+            add rdx, r12        ## add carry
+
+            ## check if rdx is bigger than base and if it is substract base and increment future carry
             cmp rdx, rcx
             jl .end_adjust1
                 sub rdx, rcx
                 inc rax
             .end_adjust1:
 
+            ## add to dest[i + j] value in rdx
             add [r15 + 8*r13], rdx
+
+            ## check if dest[i + j] is bigger than base and if it is substract base and increment future carry
             cmp [r15 + 8*r13], rcx
             jl .end_adjust
                 sub [r15 + 8*r13], rcx
                 inc rax
             .end_adjust:
 
+            ## set carry to value from rax
             mov r12, rax
 
             inc r11
@@ -59,6 +66,7 @@ mul_two_slices:
             jmp .inner_loop_begin
         .inner_loop_end:
 
+        ## forward carry if needed
         xor rax, rax
         .begin_while:
             cmp r12, rax

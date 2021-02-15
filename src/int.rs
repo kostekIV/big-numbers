@@ -48,10 +48,6 @@ impl Int {
             repr
         }
     }
-
-    pub fn to_string() -> String {
-        "".to_string()
-    }
 }
 
 impl <'a> Add for &'a Int {
@@ -158,10 +154,18 @@ mod tests {
 
         let mut res = &a + &b;
 
-        for _ in 0..1000 {
-            res = &res + &res;
-            res = &res + &b;
-        }
+        assert_eq!("6000", res.to_string());
+    }
+
+    #[test]
+    fn sub_work() {
+        let base = u64::pow(2, 32);
+        let a = Int::new(base, 2000, true);
+        let b = Int::new(base, 4000, true);
+
+        let mut res = &a - &b;
+
+        assert_eq!("-2000", res.to_string());
     }
 
     #[test]
@@ -172,9 +176,7 @@ mod tests {
 
         let mut res = &a * &b;
 
-        for _ in 0..1000 {
-            res = &(&res * &b) + &a;
-        }
+        assert_eq!("8000000", res.to_string());
     }
 
     #[test]
@@ -186,17 +188,6 @@ mod tests {
         let res = "513235966185276723577042802838626589685353980587603499037221157725387382";
 
         assert_eq!(res, (&a * &b).to_string());
-    }
-
-    #[test]
-    fn sub_work() {
-        let base = u64::pow(2, 32);
-        let a = Int::from((10u64, base, "-10"));
-        let b = Int::from((10u64, base, "20"));
-
-        let res = "-30";
-
-        assert_eq!(res, (&a - &b).to_string());
     }
 
     #[test]

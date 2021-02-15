@@ -1,4 +1,4 @@
-use crate::asm_ops::{add_two_slices, sub_two_slices};
+use crate::asm_ops::{add_two_slices, sub_two_slices, mul_two_slices};
 
 
 #[inline]
@@ -85,25 +85,10 @@ fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
         return Vec::new();
     }
 
-    let mut repr = vec![0; m + n + 1];
-    let mut carry = 0;
+    let mut repr = vec![0; m + n];
 
-    for i in 0..n {
-        for j in 0..m {
-            let (c1, limb) = mul_with_base(left[j], right[i], carry, base);
-            let (c2, limb) = add_with_base(repr[i + j], limb, base);
-            repr[i + j] = limb;
-            carry = c1 + c2;
-        }
-
-        let mut k = 0;
-        while carry != 0 {
-            let (c, limb) = add_with_base(repr[i + m + k], carry, base);
-            repr[i + m + k] = limb;
-            carry = c;
-            k += 1;
-        }
-
+    unsafe {
+        mul_two_slices(left.as_ptr(), right.as_ptr(), repr.as_mut_ptr(), base, m as u64, n as u64);
     }
 
     while let Some(v) = repr.last() {
@@ -113,7 +98,6 @@ fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
             break;
         }
     }
-
     repr
 }
 

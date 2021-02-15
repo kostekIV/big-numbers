@@ -5,6 +5,13 @@ extern "C" {
     pub(crate) fn mul_two_slices(a: *const u64, b: *const u64, dest: *mut u64, base: u64, n1: u64, n2: u64);
 }
 
+
+extern "C" {
+    pub(crate) fn add_const(dest: *mut u64, c: u64, base: u64);
+    pub(crate) fn sub_const(dest: *mut u64, c: u64, base: u64);
+    pub(crate) fn mul_const(dest: *mut u64, c: u64, base: u64, n: u64);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -130,6 +137,66 @@ mod tests {
             mul_two_slices(a.as_ptr(), b.as_ptr(), dest.as_mut_ptr(), base, 4, 1);
         }
         assert_eq!(c, dest);
+    }
+
+    #[test]
+    fn test_adding_const() {
+        let mut a = [9, 9, 9, 9, 9, 0];
+        let b = 1;
+
+        let c = [0, 0, 0, 0, 0, 1];
+        unsafe {
+            add_const(a.as_mut_ptr(), b, 10);
+        }
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn test_sub_const() {
+        let mut a = [9, 9, 9, 9, 9, 0];
+        let b = 1;
+
+        let c = [8, 9, 9, 9, 9, 0];
+        unsafe {
+            sub_const(a.as_mut_ptr(), b, 10);
+        }
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn test_sub_const_overflow() {
+        let mut a = [1, 0, 0, 1];
+        let b = 2;
+
+        let c = [9, 9, 9, 0];
+        unsafe {
+            sub_const(a.as_mut_ptr(), b, 10);
+        }
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn test_mul_const() {
+        let mut a = [9, 9, 9, 9, 9, 0];
+        let b = 1;
+
+        let c = [9, 9, 9, 9, 9, 0];
+        unsafe {
+            mul_const(a.as_mut_ptr(), b, 10, 5);
+        }
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn test_mul_const_overflow() {
+        let mut a = [9, 9, 9, 9, 9, 0];
+        let b = 2;
+
+        let c = [8, 9, 9, 9, 9, 1];
+        unsafe {
+            mul_const(a.as_mut_ptr(), b, 10, 5);
+        }
+        assert_eq!(c, a);
     }
 
 }

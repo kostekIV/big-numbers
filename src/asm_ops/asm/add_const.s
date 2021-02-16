@@ -15,7 +15,7 @@ add_const:
         add r8, rax
         xor rax, rax
         cmp r8, rdx
-        jl .end
+        jb .end
         setge al
         sub r8, rdx
         mov [rdi], r8

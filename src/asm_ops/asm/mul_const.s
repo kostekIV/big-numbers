@@ -24,7 +24,7 @@ mul_const:
         add rdx, r10
 
         cmp rdx, r11
-        jl .end_adjust1
+        jb .end_adjust1
             sub rdx, r11
             inc rax
         .end_adjust1:

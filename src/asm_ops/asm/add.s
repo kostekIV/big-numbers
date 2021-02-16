@@ -29,7 +29,7 @@ add_two_slices:
 
             ## if addition result is larger than base rebase and add carry to next value
             cmp [rdx], rcx
-            jl .if_end_1
+            jb .if_end_1
                 sub [rdx], rcx
                 add [rdx + 8], r12
             .if_end_1:
@@ -55,7 +55,7 @@ add_two_slices:
 
             ## if addition result is larger than base rebase and add carry to next value
             cmp [rdx], rcx
-            jl .if_end_2
+            jb .if_end_2
                 sub [rdx], rcx
                 add [rdx + 8], r12
             .if_end_2:

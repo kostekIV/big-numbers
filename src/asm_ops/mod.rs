@@ -31,6 +31,10 @@ extern "C" {
     pub(crate) fn mul_const(dest: *mut u64, c: u64, base: u64, n: u64);
 }
 
+extern "C" {
+    pub(crate) fn cmp_slices(a: *const u64, b: *const u64, n: u64) -> i32;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,5 +202,32 @@ mod tests {
             mul_const(a.as_mut_ptr(), b, 10, 5);
         }
         assert_eq!(c, a);
+    }
+
+    #[test]
+    fn test_cmp_slices_1() {
+        let a = [1, 2, 3, 4, 6];
+        let b = [1, 2, 3, 4, 5];
+
+        let res = unsafe { cmp_slices(a.as_ptr(), b.as_ptr(), 5) };
+        assert_eq!(res, 1);
+    }
+
+    #[test]
+    fn test_cmp_slices_2() {
+        let a = [1, 2, 3, 4, 4];
+        let b = [1, 2, 3, 4, 5];
+
+        let res = unsafe { cmp_slices(a.as_ptr(), b.as_ptr(), 5) };
+        assert_eq!(res, -1);
+    }
+
+    #[test]
+    fn test_cmp_slices_3() {
+        let a = [1, 2, 3, 4, 5];
+        let b = [1, 2, 3, 4, 5];
+
+        let res = unsafe { cmp_slices(a.as_ptr(), b.as_ptr(), 5) };
+        assert_eq!(res, 0);
     }
 }

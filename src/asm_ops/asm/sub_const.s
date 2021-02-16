@@ -13,7 +13,7 @@ sub_const:
 
     .begin:
         cmp rax, r8
-        jle .end
+        jbe .end
         add r8, rdx
         sub r8, rax
         mov rax, 1

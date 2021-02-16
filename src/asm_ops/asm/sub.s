@@ -27,8 +27,8 @@ sub_two_slices:
 
             xor r13, r13
             cmp r12, r11
-            setg al
-            cmovg r13, rcx
+            seta al
+            cmova r13, rcx
             mov [rdx], r13
 
             sub [rdx], r12
@@ -53,8 +53,8 @@ sub_two_slices:
 
             xor r13, r13
             cmp rax, r11
-            setg al
-            cmovg r13, rcx
+            seta al
+            cmova r13, rcx
             mov [rdx], r13
 
             sub [rdx], r12

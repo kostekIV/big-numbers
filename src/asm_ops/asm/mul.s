@@ -43,7 +43,7 @@ mul_two_slices:
 
             ## check if rdx is bigger than base and if it is substract base and increment future carry
             cmp rdx, rcx
-            jl .end_adjust1
+            jb .end_adjust1
                 sub rdx, rcx
                 inc rax
             .end_adjust1:
@@ -53,7 +53,7 @@ mul_two_slices:
 
             ## check if dest[i + j] is bigger than base and if it is substract base and increment future carry
             cmp [r15 + 8*r13], rcx
-            jl .end_adjust
+            jb .end_adjust
                 sub [r15 + 8*r13], rcx
                 inc rax
             .end_adjust:
@@ -73,7 +73,7 @@ mul_two_slices:
             je .end_while
             add [r15 + 8*r13], r12
             cmp [r15 + 8*r13], rcx
-            jl .end_while
+            jb .end_while
                 sub [r15 + 8*r13], rcx
                 mov r12, 1
                 inc r13

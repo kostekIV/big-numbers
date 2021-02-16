@@ -1,10 +1,9 @@
-use crate::asm_ops::{add_two_slices, sub_two_slices, mul_two_slices};
-
+use crate::asm_ops::{add_two_slices, mul_two_slices, sub_two_slices};
 
 #[inline]
 fn add_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
     let value = x + y;
-    let carry = if value >= base {1} else {0};
+    let carry = if value >= base { 1 } else { 0 };
 
     (carry, value - base * carry)
 }
@@ -14,11 +13,11 @@ fn sub_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
     let carry = x < y;
     let value;
     if carry {
-        value = base - y  + x;
+        value = base - y + x;
     } else {
-        value = x  - y;
+        value = x - y;
     }
-    let carry = if carry {1} else {0};
+    let carry = if carry { 1 } else { 0 };
 
     (carry, value)
 }
@@ -31,7 +30,7 @@ fn mul_with_base(x: u64, y: u64, carry: u64, base: u64) -> (u64, u64) {
     (carry, value - base * carry)
 }
 
-fn add_to(dest: &mut[u64], l: &[u64], r: &[u64], base: u64) {
+fn add_to(dest: &mut [u64], l: &[u64], r: &[u64], base: u64) {
     let mut carry = 0;
 
     let size = l.len();
@@ -53,7 +52,7 @@ fn add_to(dest: &mut[u64], l: &[u64], r: &[u64], base: u64) {
     }
 }
 
-fn sub_to(dest: &mut[u64], l: &[u64], r: &[u64], base: u64) {
+fn sub_to(dest: &mut [u64], l: &[u64], r: &[u64], base: u64) {
     let mut carry = 0;
 
     let size = l.len();
@@ -88,7 +87,14 @@ fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     let mut repr = vec![0; m + n];
 
     unsafe {
-        mul_two_slices(left.as_ptr(), right.as_ptr(), repr.as_mut_ptr(), base, m as u64, n as u64);
+        mul_two_slices(
+            left.as_ptr(),
+            right.as_ptr(),
+            repr.as_mut_ptr(),
+            base,
+            m as u64,
+            n as u64,
+        );
     }
 
     while let Some(v) = repr.last() {
@@ -106,7 +112,6 @@ pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     let l: &[u64];
     let r: &[u64];
 
-
     if left.len() > right.len() {
         l = left;
         r = right;
@@ -119,7 +124,14 @@ pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     dst.resize(size + 1, 0);
 
     unsafe {
-        add_two_slices(l.as_ptr(), r.as_ptr(), dst.as_mut_ptr(), base, l.len() as u64, r.len() as u64);
+        add_two_slices(
+            l.as_ptr(),
+            r.as_ptr(),
+            dst.as_mut_ptr(),
+            base,
+            l.len() as u64,
+            r.len() as u64,
+        );
     }
     // add_to(&mut dst, l, r, base);
 
@@ -168,7 +180,14 @@ pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
     dst.resize(size, 0);
 
     unsafe {
-        sub_two_slices(l.as_ptr(), r.as_ptr(), dst.as_mut_ptr(), base, l.len() as u64, r.len() as u64);
+        sub_two_slices(
+            l.as_ptr(),
+            r.as_ptr(),
+            dst.as_mut_ptr(),
+            base,
+            l.len() as u64,
+            r.len() as u64,
+        );
     }
     // sub_to(&mut dst, l, r, base);
 
@@ -208,7 +227,6 @@ pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
 
     repr
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -259,7 +277,7 @@ mod tests {
         fn test_for_base(base: u64, v1: u64, v2: u64) {
             let (carry, value) = sub_with_base(v1, v2, base);
             assert_eq!(1, carry);
-            assert_eq!(base  + v1 - v2, value);
+            assert_eq!(base + v1 - v2, value);
         }
 
         test_for_base(2, 0, 1);
@@ -327,7 +345,11 @@ mod tests {
         }
 
         for i in 2..1000 {
-            test_for_base(i, f64::sqrt(i as f64) as u64, f64::sqrt(i as f64) as u64 - 1);
+            test_for_base(
+                i,
+                f64::sqrt(i as f64) as u64,
+                f64::sqrt(i as f64) as u64 - 1,
+            );
         }
     }
 
@@ -336,7 +358,7 @@ mod tests {
         fn test_for_base(base: u64, v1: u64, v2: u64, expected_carry: u64) {
             let (carry, value) = mul_with_base(v1, v2, 0, base);
             assert_eq!(expected_carry, carry);
-            assert_eq!(v1 * v2 - expected_carry  * base, value);
+            assert_eq!(v1 * v2 - expected_carry * base, value);
         }
 
         for i in 2..1000 {
@@ -356,7 +378,7 @@ mod tests {
 
     #[test]
     fn mul_even_larger() {
-        let a = Vec::from([2, 2, 2, 4, 5,6]);
+        let a = Vec::from([2, 2, 2, 4, 5, 6]);
         let b = Vec::from([3]);
 
         let c = Vec::from([6, 6, 6, 2, 6, 9, 1]);

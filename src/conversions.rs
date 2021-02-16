@@ -14,16 +14,15 @@ pub(crate) fn convert(from: u64, to: u64, numbers: &[u64]) -> Vec<u64> {
 
 pub(crate) fn convert_from_string(from: u64, to: u64, number: String) -> Vec<u64> {
     let numbers: Vec<_> = number
-            .chars()
-            .map(|x| x.to_digit(from as u32))
-            .flatten()
-            .map(|x| x as u64)
-            .collect();
+        .chars()
+        .map(|x| x.to_digit(from as u32))
+        .flatten()
+        .map(|x| x as u64)
+        .collect();
     assert!(numbers.len() == number.len());
 
     convert(from, to, &numbers)
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -38,7 +37,6 @@ mod tests {
         assert_eq!(vec![0, 1, 0, 1], r);
     }
 
-
     #[test]
     fn smaller_to_larger() {
         let number = "1111111".to_string();
@@ -47,7 +45,6 @@ mod tests {
 
         assert_eq!(vec![1, 0, 2, 1, 1], r);
     }
-
 
     #[test]
     fn smaller_to_much_larger() {
@@ -76,4 +73,3 @@ mod tests {
         assert_eq!(vec![0; 0], r);
     }
 }
-

@@ -1,4 +1,5 @@
-use crate::asm_ops::{add_two_slices, mul_two_slices, sub_two_slices};
+use crate::asm_ops::{add_two_slices, div_const, mul_two_slices, sub_two_slices};
+use crate::errors::ArithmeticError;
 
 #[inline]
 fn add_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
@@ -214,6 +215,27 @@ pub(crate) fn mul(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     }
 }
 
+pub(crate) fn div(
+    left: &[u64],
+    right: &[u64],
+    base: u64,
+) -> Result<(Vec<u64>, Vec<u64>), ArithmeticError> {
+    if right.is_empty() {
+        return Err(ArithmeticError::DividedByZero);
+    }
+
+    if right.len() == 1 {
+        let mut l = left.to_vec();
+        l.reverse();
+        let remainder = unsafe { div_const(l.as_mut_ptr(), right[0], base, l.len() as u64) };
+        l.reverse();
+        return Ok((l, Vec::from([remainder])));
+    }
+
+    // for now
+    return Err(ArithmeticError::DividedByZero);
+}
+
 pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
     let mut repr = Vec::new();
     let mut value = value;
@@ -384,5 +406,66 @@ mod tests {
         let c = Vec::from([6, 6, 6, 2, 6, 9, 1]);
 
         assert_eq!(c, mul(&a, &b, 10));
+    }
+
+    #[test]
+    fn div_by_single() -> Result<(), ArithmeticError> {
+        let a = Vec::from([9, 9, 9, 9, 9]);
+        let b = Vec::from([3]);
+
+        let c = Vec::from([3, 3, 3, 3, 3]);
+        let d = Vec::from([0]);
+
+        let (q, r) = div(&a, &b, 10)?;
+
+        assert_eq!(c, q);
+        assert_eq!(d, r);
+
+        Ok(())
+    }
+
+    #[test]
+    fn div_by_single_with_remainder() -> Result<(), ArithmeticError> {
+        let a = Vec::from([5, 2, 1]);
+        let b = Vec::from([4]);
+
+        let c = Vec::from([1, 3, 0]);
+        let d = Vec::from([1]);
+
+        let (q, r) = div(&a, &b, 10)?;
+
+        assert_eq!(c, q);
+        assert_eq!(d, r);
+
+        Ok(())
+    }
+
+    #[test]
+    fn div_by_one() -> Result<(), ArithmeticError> {
+        let a = Vec::from([0, 0, 0, 0, 1]);
+        let b = Vec::from([1]);
+
+        let c = Vec::from([0, 0, 0, 0, 1]);
+        let d = Vec::from([0]);
+
+        let (q, r) = div(&a, &b, 2)?;
+
+        assert_eq!(c, q);
+        assert_eq!(d, r);
+
+        Ok(())
+    }
+
+    #[test]
+    fn div_by_zero() -> Result<(), ArithmeticError> {
+        let a = Vec::from([0, 0, 0, 0, 1]);
+        let b = Vec::from([]);
+
+        match div(&a, &b, 10) {
+            Ok(_) => assert!(false, "Should throw error"),
+            Err(_) => assert!(true),
+        }
+
+        Ok(())
     }
 }

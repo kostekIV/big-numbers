@@ -1,3 +1,4 @@
+pub mod errors;
 pub mod int;
 
 mod asm_ops;

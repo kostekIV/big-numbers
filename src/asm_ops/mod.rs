@@ -29,6 +29,7 @@ extern "C" {
     pub(crate) fn add_const(dest: *mut u64, c: u64, base: u64);
     pub(crate) fn sub_const(dest: *mut u64, c: u64, base: u64);
     pub(crate) fn mul_const(dest: *mut u64, c: u64, base: u64, n: u64);
+    pub(crate) fn div_const(dest: *mut u64, c: u64, base: u64, n: u64) -> u64;
 }
 
 extern "C" {
@@ -229,5 +230,56 @@ mod tests {
 
         let res = unsafe { cmp_slices(a.as_ptr(), b.as_ptr(), 5) };
         assert_eq!(res, 0);
+    }
+
+    #[test]
+    fn test_div_const_1() {
+        let mut a = [9, 9, 9, 9, 9];
+        let mut q = [0, 0, 0, 0, 0];
+
+        let c = [3, 3, 3, 3, 3];
+        let remainder = unsafe { div_const(a.as_mut_ptr(), 3, 10, 5) };
+        assert_eq!(0, remainder);
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn test_div_const_2() {
+        let mut a = [1, 2, 5];
+
+        let c = [0, 3, 1];
+        let remainder = unsafe { div_const(a.as_mut_ptr(), 4, 10, 3) };
+        assert_eq!(c, a);
+        assert_eq!(1, remainder);
+    }
+
+    #[test]
+    fn test_div_const_3() {
+        let mut a = [9, 9, 9, 9, 9];
+
+        let c = [2, 4, 9, 9, 9];
+        let remainder = unsafe { div_const(a.as_mut_ptr(), 4, 10, 5) };
+        assert_eq!(c, a);
+        assert_eq!(3, remainder);
+    }
+
+    #[test]
+    fn test_div_const_4() {
+        let mut a = [1];
+
+        let c = [0];
+        let remainder = unsafe { div_const(a.as_mut_ptr(), 2, 10, 1) };
+        assert_eq!(1, remainder);
+        assert_eq!(c, a);
+    }
+
+    #[test]
+    fn test_div_const_5() {
+        let mut a = [5];
+
+        let c = [1];
+        let remainder = unsafe { div_const(a.as_mut_ptr(), 4, 10, 1) };
+        assert_eq!(1, remainder);
+        assert_eq!(c, a);
     }
 }

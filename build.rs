@@ -5,6 +5,7 @@ fn main() {
         "src/asm_ops/asm/add.s",
         "src/asm_ops/asm/add_const.s",
         "src/asm_ops/asm/cmp.s",
+        "src/asm_ops/asm/div_const.s",
         "src/asm_ops/asm/sub.s",
         "src/asm_ops/asm/sub_const.s",
         "src/asm_ops/asm/mul.s",

@@ -9,8 +9,6 @@ fn main() {
         "src/asm_ops/asm/mul.s",
         "src/asm_ops/asm/mul_const.s",
     ];
-    
-    cc::Build::new()
-        .files(asm_srcs)
-        .compile("libasm.a");
+
+    cc::Build::new().files(asm_srcs).compile("libasm.a");
 }

@@ -1,9 +1,8 @@
-use std::ops::{Add, Mul, Sub};
 use std::fmt;
+use std::ops::{Add, Mul, Sub};
 
 use crate::base_ops;
-use crate::conversions::{convert_from_string, convert};
-
+use crate::conversions::{convert, convert_from_string};
 
 #[derive(Debug)]
 pub struct Int {
@@ -30,7 +29,7 @@ impl Int {
     }
 
     fn new(base: u64, value: u64, sign: bool) -> Int {
-        let mut sign = if sign {1} else {0};
+        let mut sign = if sign { 1 } else { 0 };
         if value == 0 {
             sign = 0;
         }
@@ -42,15 +41,11 @@ impl Int {
     }
 
     pub fn from_repr(base: u64, repr: Vec<u64>, sign: i8) -> Int {
-        Int {
-            base,
-            sign,
-            repr
-        }
+        Int { base, sign, repr }
     }
 }
 
-impl <'a> Add for &'a Int {
+impl<'a> Add for &'a Int {
     type Output = Int;
 
     fn add(self, other: &'a Int) -> Int {
@@ -61,7 +56,7 @@ impl <'a> Add for &'a Int {
             repr = base_ops::add(&self.repr, &other.repr, self.base);
             sign = self.sign;
         } else {
-            let (s, r)= base_ops::sub(&self.repr, &other.repr, self.base);
+            let (s, r) = base_ops::sub(&self.repr, &other.repr, self.base);
             sign = s * self.sign;
             repr = r;
         }
@@ -74,7 +69,7 @@ impl <'a> Add for &'a Int {
     }
 }
 
-impl <'a> Sub for &'a Int {
+impl<'a> Sub for &'a Int {
     type Output = Int;
 
     fn sub(self, other: &'a Int) -> Int {
@@ -97,7 +92,7 @@ impl <'a> Sub for &'a Int {
     }
 }
 
-impl <'a> Mul for &'a Int {
+impl<'a> Mul for &'a Int {
     type Output = Int;
 
     fn mul(self, other: &'a Int) -> Int {
@@ -131,10 +126,10 @@ impl fmt::Display for Int {
         reversed_repr.reverse();
         let dec = convert(self.base, 10, &reversed_repr);
         let str_repr: String = dec
-                .into_iter()
-                .rev()
-                .map(|i| i.to_string())
-                .collect::<String>();
+            .into_iter()
+            .rev()
+            .map(|i| i.to_string())
+            .collect::<String>();
         if self.sign < 0 {
             write!(f, "-")?;
         }

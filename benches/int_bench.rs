@@ -1,9 +1,8 @@
 #![feature(test)]
 
 extern crate test;
-use test::Bencher;
 use big_numbers::int::Int;
-
+use test::Bencher;
 
 #[bench]
 fn add_bench(ben: &mut Bencher) {
@@ -33,7 +32,6 @@ fn sub_bench(ben: &mut Bencher) {
     ben.iter(|| n_subs(&a, &b, 100));
 }
 
-
 #[bench]
 fn mul_bench(ben: &mut Bencher) {
     fn n_muls(a: &Int, b: &Int, n: i32) {
@@ -47,4 +45,3 @@ fn mul_bench(ben: &mut Bencher) {
 
     ben.iter(|| n_muls(&a, &b, 100));
 }
-

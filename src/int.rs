@@ -1,5 +1,4 @@
 use std::fmt;
-use std::ops::{Add, Div, Mul, Rem, Sub};
 use std::ops;
 
 use crate::base_ops;
@@ -75,82 +74,67 @@ impl_op_ex!(+ |a: &Int, b: &Int| -> Int {
     }
 });
 
-impl<'a> Sub for &'a Int {
-    type Output = Int;
+impl_op_ex!(-|a: &Int, b: &Int| -> Int {
+    let sign;
+    let repr;
 
-    fn sub(self, other: &'a Int) -> Int {
-        let sign;
-        let repr;
-        if self.sign == other.sign {
-            let (s, r) = base_ops::sub(&self.repr, &other.repr, self.base);
-            sign = s * self.sign;
-            repr = r;
-        } else {
-            repr = base_ops::add(&self.repr, &other.repr, self.base);
-            sign = self.sign;
-        }
+    if a.sign == b.sign {
+        let (s, r) = base_ops::sub(&a.repr, &b.repr, a.base);
+        sign = s * a.sign;
+        repr = r;
+    } else {
+        repr = base_ops::add(&a.repr, &b.repr, a.base);
+        sign = a.sign;
+    }
 
-        Int {
-            base: self.base,
-            sign,
-            repr,
+    Int {
+        base: a.base,
+        sign,
+        repr,
+    }
+});
+
+impl_op_ex!(*|a: &Int, b: &Int| -> Int {
+    let repr = base_ops::mul(&a.repr, &b.repr, a.base);
+
+    Int {
+        base: a.base,
+        sign: a.sign * b.sign,
+        repr,
+    }
+});
+
+impl_op_ex!(/ |a: &Int, b: &Int| -> Int {
+    let repr = base_ops::div(&a.repr, &b.repr, a.base);
+
+    match repr {
+        Err(_) => panic!("Division by zero"),
+        Ok(v) => {
+            let (q, _r) = v;
+            return Int {
+                base: a.base,
+                sign: a.sign * b.sign,
+                repr: q,
+            };
         }
     }
-}
+});
 
-impl<'a> Mul for &'a Int {
-    type Output = Int;
+impl_op_ex!(% |a: &Int, b: &Int| -> Int {
+    let repr = base_ops::div(&a.repr, &b.repr, a.base);
 
-    fn mul(self, other: &'a Int) -> Int {
-        let repr = base_ops::mul(&self.repr, &other.repr, self.base);
-
-        Int {
-            base: self.base,
-            sign: self.sign * other.sign,
-            repr,
+    match repr {
+        Err(_) => panic!("Division by zero"),
+        Ok(v) => {
+            let (_q, r) = v;
+            return Int {
+                base: a.base,
+                sign: b.sign,
+                repr: r,
+            };
         }
     }
-}
-
-impl<'a> Div for &'a Int {
-    type Output = Int;
-
-    fn div(self, other: &'a Int) -> Int {
-        let repr = base_ops::div(&self.repr, &other.repr, self.base);
-
-        match repr {
-            Err(_) => panic!("Division by zero"),
-            Ok(v) => {
-                let (q, _r) = v;
-                return Int {
-                    base: self.base,
-                    sign: self.sign * other.sign,
-                    repr: q,
-                };
-            }
-        }
-    }
-}
-
-impl<'a> Rem for &'a Int {
-    type Output = Int;
-
-    fn rem(self, other: &'a Int) -> Int {
-        let repr = base_ops::div(&self.repr, &other.repr, self.base);
-
-        match repr {
-            Err(_) => panic!("Division by zero"),
-            Ok(v) => {
-                let (_q, r) = v;
-                return Int {
-                    base: self.base,
-                    sign: self.sign * other.sign,
-                    repr: r,
-                };
-            }
-        }
-    }
-}
+});
 
 impl From<(u64, &str)> for Int {
     fn from(b_number: (u64, &str)) -> Self {
@@ -223,7 +207,7 @@ mod tests {
         let a = Int::new(2000, true);
         let b = Int::new(4000, true);
 
-        let res = &a * &b;
+        let res = a * b;
 
         assert_eq!("8000000", res.to_string());
     }
@@ -235,7 +219,7 @@ mod tests {
 
         let res = "513235966185276723577042802838626589685353980587603499037221157725387382";
 
-        assert_eq!(res, (&a * &b).to_string());
+        assert_eq!(res, (a * b).to_string());
     }
 
     #[test]
@@ -245,7 +229,7 @@ mod tests {
 
         let res = "6984187427019140890392263939201381255794521521404753020285386759076060388128217398538085638204314143778445170987469902359626939868597686317989357130844502411654179949593789398572698279401800437182262071633794736819047928538642656453504494846543826853219170223291572811016310695671975220229885559208073835075165412941738216349812566007086107085674915461178421336400053602648851116319690740924243733929389135346245600878906055866662904821596769446452679180404182882908714141561960450198211777105459237357696249387288842443980454287999859744357381065897992784834180530623709850701596116376752352648515404821171058588393376758898229127814171792045797171652440892574874661097969857260264775995557518099725075828432481009162863094858177602767737177452394729362007140217435618135183166316283447246098257049862536588487445492016448847515987426678968915538841844647778233751072980874818573199110361191179579563456006137150652323665047374173140675058365168533760148132479304754847005618595514314438463815088349";
 
-        assert_eq!(res, (&a - &b).to_string());
+        assert_eq!(res, (a - b).to_string());
     }
 
     #[test]
@@ -255,7 +239,7 @@ mod tests {
 
         let res = "23984702938714071474938389359993160000159539";
 
-        assert_eq!(res, (&a - &b).to_string());
+        assert_eq!(res, (a - b).to_string());
     }
 
     #[test]
@@ -265,7 +249,7 @@ mod tests {
 
         let res = "825";
 
-        assert_eq!(res, (&a / &b).to_string());
+        assert_eq!(res, (a / b).to_string());
     }
 
     #[test]
@@ -275,7 +259,7 @@ mod tests {
 
         let res = "100";
 
-        assert_eq!(res, (&a % &b).to_string());
+        assert_eq!(res, (a % b).to_string());
     }
 
     #[test]
@@ -285,7 +269,7 @@ mod tests {
 
         let res = "877028833055445496816";
 
-        assert_eq!(res, (&a / &b).to_string());
+        assert_eq!(res, (a / b).to_string());
     }
 
     #[test]
@@ -295,7 +279,7 @@ mod tests {
 
         let res = "43230353436882553779668086043";
 
-        assert_eq!(res, (&a % &b).to_string());
+        assert_eq!(res, (a % b).to_string());
     }
 
     #[test]
@@ -304,7 +288,7 @@ mod tests {
             if n == 0 {
                 Int::one()
             } else {
-                &Int::new(n, true) * &fact(n - 1)
+                Int::new(n, true) * fact(n - 1)
             }
         }
 

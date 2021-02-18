@@ -374,7 +374,7 @@ mod tests {
         let b = Vec::from([3]);
 
         let c = Vec::from([3, 3, 3, 3, 3]);
-        let d = Vec::from([0]);
+        let d: Vec<u64> = Vec::from([]);
 
         let (q, r) = div(&a, &b, 10)?;
 

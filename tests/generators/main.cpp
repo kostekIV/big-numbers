@@ -32,12 +32,21 @@ int main() {
       auto r = mpz_class(a % b);
       div_file << a.get_str() << "," << b.get_str() << "," << q.get_str() << "\n";
       rem_file << a.get_str() << "," << b.get_str() << "," << r.get_str() << "\n";
+  }  n = 100;
+
+  while (n--) {
+      a = ran.get_z_bits(10000);
+      b = ran.get_z_bits(5000);
+      auto q = mpz_class(a / b);
+      auto r = mpz_class(a % b);
+      div_file << a.get_str() << "," << b.get_str() << "," << q.get_str() << "\n";
+      rem_file << a.get_str() << "," << b.get_str() << "," << r.get_str() << "\n";
   }
 
   n = 100;
   while (n--) {
       a = ran.get_z_bits(1000);
-      b = ran.get_z_bits(100);
+      b = ran.get_z_bits(10);
       auto q = mpz_class(a / b);
       auto r = mpz_class(a % b);
       div_file << a.get_str() << "," << b.get_str() << "," << q.get_str() << "\n";

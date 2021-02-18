@@ -1,5 +1,6 @@
 use std::fmt;
 use std::ops::{Add, Div, Mul, Rem, Sub};
+use std::ops;
 
 use crate::base_ops;
 use crate::conversions::{convert, convert_from_string};
@@ -54,29 +55,25 @@ impl Int {
     }
 }
 
-impl<'a> Add for &'a Int {
-    type Output = Int;
+impl_op_ex!(+ |a: &Int, b: &Int| -> Int {
+    let sign;
+    let repr;
 
-    fn add(self, other: &'a Int) -> Int {
-        let sign;
-        let repr;
-
-        if self.sign == other.sign {
-            repr = base_ops::add(&self.repr, &other.repr, self.base);
-            sign = self.sign;
-        } else {
-            let (s, r) = base_ops::sub(&self.repr, &other.repr, self.base);
-            sign = s * self.sign;
-            repr = r;
-        }
-
-        Int {
-            base: self.base,
-            sign,
-            repr,
-        }
+    if a.sign == b.sign {
+        repr = base_ops::add(&a.repr, &b.repr, a.base);
+        sign = a.sign;
+    } else {
+        let (s, r) = base_ops::sub(&a.repr, &b.repr, a.base);
+        sign = s * a.sign;
+        repr = r;
     }
-}
+
+    Int {
+        base: a.base,
+        sign,
+        repr,
+    }
+});
 
 impl<'a> Sub for &'a Int {
     type Output = Int;

@@ -44,7 +44,6 @@ div_const:
         mov r12, rax
     .acc_empty:
 
-
     mov r11, r14
     cmp r14, rsi
     jb .loop_epilogue

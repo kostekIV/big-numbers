@@ -157,7 +157,14 @@ pub(crate) fn div(
         l.reverse();
         let remainder = unsafe { div_const(l.as_mut_ptr(), right[0], base, l.len() as u64) };
         l.reverse();
-        return Ok((l, Vec::from([remainder])));
+
+        let remainder_repr = if remainder == 0 {
+            Vec::from([])
+        } else {
+            Vec::from([remainder])
+        };
+
+        return Ok((l, remainder_repr));
     } else if right.len() > left.len() {
         return Ok((Vec::from([]), left.to_vec()));
     }

@@ -151,7 +151,7 @@ pub(crate) fn div(
     }
 
     if right.len() == 1 && right[0] == 1 {
-        return Ok((left.to_vec(), Vec::from([0])));
+        return Ok((left.to_vec(), Vec::from([])));
     } else if right.len() == 1 {
         let mut l = left.to_vec();
         l.reverse();
@@ -159,7 +159,7 @@ pub(crate) fn div(
         l.reverse();
         return Ok((l, Vec::from([remainder])));
     } else if right.len() > left.len() {
-        return Ok((Vec::from([0]), left.to_vec()));
+        return Ok((Vec::from([]), left.to_vec()));
     }
 
     // Knuth The art of Computer Programming vol2 3rd edition 4.3.1 Algorithm D
@@ -399,7 +399,7 @@ mod tests {
         let b = Vec::from([1]);
 
         let c = Vec::from([0, 0, 0, 0, 1]);
-        let d = Vec::from([0]);
+        let d: Vec<u64> = Vec::from([]);
 
         let (q, r) = div(&a, &b, 2)?;
 

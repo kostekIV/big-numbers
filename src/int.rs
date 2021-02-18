@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Rem, Sub};
 
 use crate::base_ops;
 use crate::conversions::{convert, convert_from_string};
@@ -12,7 +12,7 @@ pub struct Int {
 }
 
 impl Int {
-    fn zero(base: u64) -> Int {
+    pub fn zero(base: u64) -> Int {
         Int {
             base,
             sign: 0,
@@ -20,7 +20,7 @@ impl Int {
         }
     }
 
-    fn one(base: u64) -> Int {
+    pub fn one(base: u64) -> Int {
         Int {
             base,
             sign: 1,
@@ -28,7 +28,7 @@ impl Int {
         }
     }
 
-    fn new(base: u64, value: u64, sign: bool) -> Int {
+    pub fn new(base: u64, value: u64, sign: bool) -> Int {
         let mut sign = if sign { 1 } else { 0 };
         if value == 0 {
             sign = 0;
@@ -106,6 +106,46 @@ impl<'a> Mul for &'a Int {
     }
 }
 
+impl<'a> Div for &'a Int {
+    type Output = Int;
+
+    fn div(self, other: &'a Int) -> Int {
+        let repr = base_ops::div(&self.repr, &other.repr, self.base);
+
+        match repr {
+            Err(_) => panic!("Division by zero"),
+            Ok(v) => {
+                let (q, _r) = v;
+                return Int {
+                    base: self.base,
+                    sign: self.sign * other.sign,
+                    repr: q,
+                };
+            }
+        }
+    }
+}
+
+impl<'a> Rem for &'a Int {
+    type Output = Int;
+
+    fn rem(self, other: &'a Int) -> Int {
+        let repr = base_ops::div(&self.repr, &other.repr, self.base);
+
+        match repr {
+            Err(_) => panic!("Division by zero"),
+            Ok(v) => {
+                let (_q, r) = v;
+                return Int {
+                    base: self.base,
+                    sign: self.sign * other.sign,
+                    repr: r,
+                };
+            }
+        }
+    }
+}
+
 impl From<(u64, u64, &str)> for Int {
     fn from(b_number: (u64, u64, &str)) -> Self {
         let (from, to, mut number) = b_number;
@@ -123,6 +163,9 @@ impl From<(u64, u64, &str)> for Int {
 impl fmt::Display for Int {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut reversed_repr = self.repr.to_vec();
+        if reversed_repr.is_empty() {
+            return write!(f, "0");
+        }
         reversed_repr.reverse();
         let dec = convert(self.base, 10, &reversed_repr);
         let str_repr: String = dec
@@ -147,7 +190,7 @@ mod tests {
         let a = Int::new(base, 2000, true);
         let b = Int::new(base, 4000, true);
 
-        let mut res = &a + &b;
+        let res = &a + &b;
 
         assert_eq!("6000", res.to_string());
     }
@@ -158,7 +201,7 @@ mod tests {
         let a = Int::new(base, 2000, true);
         let b = Int::new(base, 4000, true);
 
-        let mut res = &a - &b;
+        let res = &a - &b;
 
         assert_eq!("-2000", res.to_string());
     }
@@ -169,7 +212,7 @@ mod tests {
         let a = Int::new(base, 2000, true);
         let b = Int::new(base, 4000, true);
 
-        let mut res = &a * &b;
+        let res = &a * &b;
 
         assert_eq!("8000000", res.to_string());
     }
@@ -205,6 +248,58 @@ mod tests {
         let res = "23984702938714071474938389359993160000159539";
 
         assert_eq!(res, (&a - &b).to_string());
+    }
+
+    #[test]
+    fn small_div_work() {
+        let base = u64::pow(2, 32);
+        let a = Int::from((10u64, base, "102400"));
+        let b = Int::from((10u64, base, "124"));
+
+        let res = "825";
+
+        assert_eq!(res, (&a / &b).to_string());
+    }
+
+    #[test]
+    fn small_rem_work() {
+        let base = u64::pow(2, 32);
+        let a = Int::from((10u64, base, "102400"));
+        let b = Int::from((10u64, base, "124"));
+
+        let res = "100";
+
+        assert_eq!(res, (&a % &b).to_string());
+    }
+
+    #[test]
+    fn large_div_work() {
+        let base = u64::pow(2, 32);
+        let a = Int::from((
+            10u64,
+            base,
+            "192803740921837409812374098127340981273409821340987",
+        ));
+        let b = Int::from((10u64, base, "219837402893740912837409812734"));
+
+        let res = "877028833055445496816";
+
+        assert_eq!(res, (&a / &b).to_string());
+    }
+
+    #[test]
+    fn large_rem_work() {
+        let base = u64::pow(2, 32);
+        let a = Int::from((
+            10u64,
+            base,
+            "192803740921837409812374098127340981273409821340987",
+        ));
+        let b = Int::from((10u64, base, "219837402893740912837409812734"));
+
+        let res = "43230353436882553779668086043";
+
+        assert_eq!(res, (&a % &b).to_string());
     }
 
     #[test]

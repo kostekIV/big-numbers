@@ -14,7 +14,7 @@ files = [
 ops = [
     lambda x,y: x * y,
     lambda x,y: x + y,
-    lambda x,y: x - y,
+    lambda x,y: x - y
 ]
 
 for op, fi in zip(ops, files):

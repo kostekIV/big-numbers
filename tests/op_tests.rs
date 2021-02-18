@@ -35,3 +35,5 @@ macro_rules! op_test {
 op_test!(add_test, "./tests/add_test.csv", +);
 op_test!(sub_test, "./tests/sub_test.csv", -);
 op_test!(mul_test, "./tests/mul_test.csv", *);
+op_test!(div_test, "./tests/div_test.csv", /);
+op_test!(rem_test, "./tests/rem_test.csv", %);

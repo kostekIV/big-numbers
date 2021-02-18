@@ -235,7 +235,6 @@ mod tests {
     #[test]
     fn test_div_const_1() {
         let mut a = [9, 9, 9, 9, 9];
-        let mut q = [0, 0, 0, 0, 0];
 
         let c = [3, 3, 3, 3, 3];
         let remainder = unsafe { div_const(a.as_mut_ptr(), 3, 10, 5) };

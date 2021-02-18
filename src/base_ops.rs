@@ -1,75 +1,9 @@
-use crate::asm_ops::{add_two_slices, div_const, mul_two_slices, sub_two_slices};
+use crate::asm_ops::{
+    add_const, add_two_slices, cmp_slices, div_const, mul_const, mul_two_slices, sub_const,
+    sub_two_slices,
+};
 use crate::errors::ArithmeticError;
-
-#[inline]
-fn add_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
-    let value = x + y;
-    let carry = if value >= base { 1 } else { 0 };
-
-    (carry, value - base * carry)
-}
-
-#[inline]
-fn sub_with_base(x: u64, y: u64, base: u64) -> (u64, u64) {
-    let carry = x < y;
-    let value;
-    if carry {
-        value = base - y + x;
-    } else {
-        value = x - y;
-    }
-    let carry = if carry { 1 } else { 0 };
-
-    (carry, value)
-}
-
-#[inline]
-fn mul_with_base(x: u64, y: u64, carry: u64, base: u64) -> (u64, u64) {
-    let value: u64 = x * y + carry;
-    let carry = value / base;
-
-    (carry, value - base * carry)
-}
-
-fn add_to(dest: &mut [u64], l: &[u64], r: &[u64], base: u64) {
-    let mut carry = 0;
-
-    let size = l.len();
-    for i in 0..size {
-        if i < l.len() && i < r.len() {
-            let (c1, limb) = add_with_base(l[i], r[i], base);
-            let (c2, limb) = add_with_base(limb, carry, base);
-            dest[i] = limb;
-            carry = c1 + c2;
-        } else if i >= r.len() {
-            let (c, limb) = add_with_base(l[i], carry, base);
-            dest[i] = limb;
-            carry = c;
-        }
-    }
-
-    if carry != 0 {
-        dest[size] = carry;
-    }
-}
-
-fn sub_to(dest: &mut [u64], l: &[u64], r: &[u64], base: u64) {
-    let mut carry = 0;
-
-    let size = l.len();
-    for i in 0..size {
-        if i < l.len() && i < r.len() {
-            let (c1, limb) = sub_with_base(l[i], r[i], base);
-            let (c2, limb) = sub_with_base(limb, carry, base);
-            dest[i] = limb;
-            carry = c1 + c2;
-        } else if i >= r.len() {
-            let (c, limb) = sub_with_base(l[i], carry, base);
-            dest[i] = limb;
-            carry = c;
-        }
-    }
-}
+use crate::utils::{bit_len, trim_zeros};
 
 fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     let (m, n) = (left.len(), right.len());
@@ -134,7 +68,6 @@ pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
             r.len() as u64,
         );
     }
-    // add_to(&mut dst, l, r, base);
 
     if *dst.last().unwrap() == 0 {
         dst.pop();
@@ -190,15 +123,8 @@ pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
             r.len() as u64,
         );
     }
-    // sub_to(&mut dst, l, r, base);
 
-    while let Some(v) = dst.last() {
-        if *v == 0 {
-            dst.pop();
-        } else {
-            break;
-        }
-    }
+    trim_zeros(&mut dst);
 
     if dst.is_empty() {
         sign = 0;
@@ -224,16 +150,127 @@ pub(crate) fn div(
         return Err(ArithmeticError::DividedByZero);
     }
 
-    if right.len() == 1 {
+    if right.len() == 1 && right[0] == 1 {
+        return Ok((left.to_vec(), Vec::from([0])));
+    } else if right.len() == 1 {
         let mut l = left.to_vec();
         l.reverse();
         let remainder = unsafe { div_const(l.as_mut_ptr(), right[0], base, l.len() as u64) };
         l.reverse();
         return Ok((l, Vec::from([remainder])));
+    } else if right.len() > left.len() {
+        return Ok((Vec::from([0]), left.to_vec()));
     }
 
-    // for now
-    return Err(ArithmeticError::DividedByZero);
+    // Knuth The art of Computer Programming vol2 3rd edition 4.3.1 Algorithm D
+    // Poorly written by me :(.
+    let (m, n) = (left.len(), right.len());
+    let (mut u, mut v) = (left.to_vec(), right.to_vec());
+    u.push(0);
+    let mut q = vec![0; m - n + 1];
+
+    let mut r = vec![0; 2];
+    let mut br_u = vec![0; 2];
+    let mut qp = vec![0; 2];
+    let mut qp_copy = vec![0; 3];
+    let mut vq;
+
+    let d = u64::pow(2, bit_len(base) - bit_len(v[n - 1]) - 1);
+
+    unsafe {
+        mul_const(u.as_mut_ptr(), d, base, (u.len() - 1) as u64);
+        mul_const(v.as_mut_ptr(), d, base, v.len() as u64);
+    }
+
+    let (vn_1, vn_2) = (v[n - 1], v[n - 2]);
+
+    for j in (0..(m - n + 1)).rev() {
+        qp[1] = u[j + n - 1];
+        qp[0] = u[j + n];
+        let remainder = unsafe { div_const(qp.as_mut_ptr(), vn_1, base, 2) };
+
+        qp.reverse();
+
+        r[0] = remainder;
+        r[1] = 0;
+
+        loop {
+            if qp == [0, 1] {
+                qp[0] = base - 1;
+                qp[1] = 0;
+                unsafe { add_const(r.as_mut_ptr(), vn_1, base) }
+            } else {
+                qp_copy[0] = qp[0];
+                qp_copy[1] = qp[1];
+                qp_copy[2] = 0;
+
+                br_u[0] = u[j + n - 2];
+                br_u[1] = r[0];
+
+                unsafe { mul_const(qp_copy.as_mut_ptr(), vn_2, base, 2) };
+
+                if qp_copy[2] != 0 || unsafe { cmp_slices(qp_copy.as_ptr(), br_u.as_ptr(), 2) } == 1
+                {
+                    unsafe {
+                        sub_const(qp.as_mut_ptr(), 1, base);
+                        add_const(r.as_mut_ptr(), vn_1, base);
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if r[1] != 0 {
+                break;
+            }
+        }
+
+        vq = v.to_vec();
+        vq.push(0);
+
+        if !qp.is_empty() {
+            unsafe {
+                mul_const(vq.as_mut_ptr(), qp[0], base, n as u64);
+                if cmp_slices(vq.as_ptr(), u.as_ptr().offset(j as isize), (n + 1) as u64) == 1 {
+                    sub_two_slices(
+                        vq.as_ptr(),
+                        v.as_ptr(),
+                        vq.as_mut_ptr(),
+                        base,
+                        (n + 1) as u64,
+                        (n + 1) as u64,
+                    );
+                    qp[0] -= 1;
+                }
+                sub_two_slices(
+                    u.as_ptr().offset(j as isize),
+                    vq.as_ptr(),
+                    u.as_mut_ptr().offset(j as isize),
+                    base,
+                    (n + 1) as u64,
+                    (n + 1) as u64,
+                );
+            }
+            q[j] = qp[0];
+        } else {
+            q[j] = 0;
+        }
+    }
+
+    u.reverse();
+    unsafe {
+        div_const(
+            u.as_mut_ptr().offset((m - n + 1) as isize),
+            d,
+            base,
+            n as u64,
+        );
+    }
+    u.reverse();
+
+    trim_zeros(&mut q);
+    trim_zeros(&mut u);
+    return Ok((q.to_vec(), u.to_vec()));
 }
 
 pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
@@ -253,60 +290,6 @@ pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn add_without_carry() {
-        fn test_for_base(base: u64, v1: u64, v2: u64) {
-            let (carry, value) = add_with_base(v1, v2, base);
-            assert_eq!(0, carry);
-            assert_eq!(v1 + v2, value);
-        }
-
-        for i in 2..1000 {
-            test_for_base(i, i - 2, 1);
-        }
-    }
-
-    #[test]
-    fn add_with_carry() {
-        fn test_for_base(base: u64, v1: u64, v2: u64) {
-            let (carry, value) = add_with_base(v1, v2, base);
-            assert_eq!(1, carry);
-            assert_eq!(0, value);
-        }
-
-        for i in 2..1000 {
-            test_for_base(i, i - 2, 2);
-        }
-    }
-
-    #[test]
-    fn sub_without_carry() {
-        fn test_for_base(base: u64, v1: u64, v2: u64) {
-            let (carry, value) = sub_with_base(v1, v2, base);
-            assert_eq!(0, carry);
-            assert_eq!(v1 - v2, value);
-        }
-
-        test_for_base(2, 1, 0);
-        for i in 3..1000 {
-            test_for_base(i, i - 2, 1);
-        }
-    }
-
-    #[test]
-    fn sub_with_carry() {
-        fn test_for_base(base: u64, v1: u64, v2: u64) {
-            let (carry, value) = sub_with_base(v1, v2, base);
-            assert_eq!(1, carry);
-            assert_eq!(base + v1 - v2, value);
-        }
-
-        test_for_base(2, 0, 1);
-        for i in 3..1000 {
-            test_for_base(i, 0, i - 2);
-        }
-    }
 
     #[test]
     fn add_reversed_digits_even_sizes() {
@@ -356,36 +339,6 @@ mod tests {
         let c = (-1, Vec::from([2, 0, 7, 9, 9]));
 
         assert_eq!(c, sub(&a, &b, 10));
-    }
-
-    #[test]
-    fn mul_without_carry() {
-        fn test_for_base(base: u64, v1: u64, v2: u64) {
-            let (carry, value) = mul_with_base(v1, v2, 0, base);
-            assert_eq!(0, carry);
-            assert_eq!(v1 * v2, value);
-        }
-
-        for i in 2..1000 {
-            test_for_base(
-                i,
-                f64::sqrt(i as f64) as u64,
-                f64::sqrt(i as f64) as u64 - 1,
-            );
-        }
-    }
-
-    #[test]
-    fn mul_with_carry() {
-        fn test_for_base(base: u64, v1: u64, v2: u64, expected_carry: u64) {
-            let (carry, value) = mul_with_base(v1, v2, 0, base);
-            assert_eq!(expected_carry, carry);
-            assert_eq!(v1 * v2 - expected_carry * base, value);
-        }
-
-        for i in 2..1000 {
-            test_for_base(i, i - 1, i - 1, i - 2);
-        }
     }
 
     #[test]
@@ -465,6 +418,54 @@ mod tests {
             Ok(_) => assert!(false, "Should throw error"),
             Err(_) => assert!(true),
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn div_simple_test_1() -> Result<(), ArithmeticError> {
+        let a = Vec::from([9, 9, 9]);
+        let b = Vec::from([3, 3]);
+
+        let (q, r) = div(&a, &b, 10)?;
+
+        let c = Vec::from([0, 3]);
+        let d = Vec::from([9]);
+
+        assert_eq!(c, q);
+        assert_eq!(d, r);
+
+        Ok(())
+    }
+
+    #[test]
+    fn div_simple_test_2() -> Result<(), ArithmeticError> {
+        let a = Vec::from([1, 2, 1]);
+        let b = Vec::from([1, 1]);
+
+        let (q, r) = div(&a, &b, 10)?;
+
+        let c = Vec::from([1, 1]);
+        let d: Vec<u64> = Vec::from([]);
+
+        assert_eq!(c, q);
+        assert_eq!(d, r);
+
+        Ok(())
+    }
+
+    #[test]
+    fn div_simple_test_3() -> Result<(), ArithmeticError> {
+        let a = Vec::from([0, 0, 0, 9, 9, 1, 2]);
+        let b = Vec::from([4, 3]);
+
+        let (q, r) = div(&a, &b, 10)?;
+
+        let c = Vec::from([6, 7, 6, 4, 6]);
+        let d: Vec<u64> = Vec::from([6, 1]);
+
+        assert_eq!(c, q);
+        assert_eq!(d, r);
 
         Ok(())
     }

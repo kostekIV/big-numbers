@@ -38,6 +38,10 @@ mul_const:
         jmp .loop_begin
     .loop_end:
 
+    xor r9, r9
+    cmp r10, r9
+    je .end
     mov [rdi], r10
 
+    .end:
     ret

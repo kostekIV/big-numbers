@@ -6,7 +6,7 @@ use crate::base_ops;
 use crate::conversions::{convert, convert_from_string};
 use crate::utils::cmp_repr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Int {
     base: u64,
     sign: i8,

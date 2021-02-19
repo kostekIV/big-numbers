@@ -36,6 +36,64 @@ extern "C" {
     pub(crate) fn cmp_slices(a: *const u64, b: *const u64, n: u64) -> i32;
 }
 
+pub mod wrapped_ops {
+    pub(crate) fn unsafe_add_two_slices(a: &[u64], b: &[u64], d: &mut [u64], base: u64) {
+        let (n, m) = (a.len(), b.len());
+        assert!(d.len() >= usize::max(n, m) + 1);
+        unsafe {
+            if n > m {
+                super::add_two_slices(
+                    a.as_ptr(),
+                    b.as_ptr(),
+                    d.as_mut_ptr(),
+                    base,
+                    n as u64,
+                    m as u64,
+                );
+            } else {
+                super::add_two_slices(
+                    b.as_ptr(),
+                    a.as_ptr(),
+                    d.as_mut_ptr(),
+                    base,
+                    m as u64,
+                    n as u64,
+                );
+            }
+        }
+    }
+
+    pub(crate) fn unsafe_sub_two_slices(a: &[u64], b: &[u64], d: &mut [u64], base: u64) {
+        let (n, m) = (a.len(), b.len());
+        assert!(d.len() >= usize::max(n, m) && n >= m);
+        unsafe {
+            super::sub_two_slices(
+                a.as_ptr(),
+                b.as_ptr(),
+                d.as_mut_ptr(),
+                base,
+                n as u64,
+                m as u64,
+            );
+        }
+    }
+
+    pub(crate) fn unsafe_mul_two_slices(a: &[u64], b: &[u64], d: &mut [u64], base: u64) {
+        let (n, m) = (a.len(), b.len());
+        assert!(d.len() >= n + m);
+        unsafe {
+            super::mul_two_slices(
+                a.as_ptr(),
+                b.as_ptr(),
+                d.as_mut_ptr(),
+                base,
+                n as u64,
+                m as u64,
+            );
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

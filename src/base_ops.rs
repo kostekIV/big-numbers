@@ -1,8 +1,12 @@
+use crate::algorithms::karatsuba;
 use crate::asm_ops::wrapped_ops;
 use crate::asm_ops::{add_const, cmp_slices, div_const, mul_const, sub_const, sub_two_slices};
 use crate::errors::ArithmeticError;
 use crate::utils::{bit_len, trim_zeros};
 
+const KARATSUBA_THRESHOLD: usize = 13;
+
+#[inline]
 fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     let (m, n) = (left.len(), right.len());
     if m == 1 && left[0] == 1 {
@@ -100,12 +104,17 @@ pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
     (sign, dst)
 }
 
-pub(crate) fn mul(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
+#[inline]
+pub(crate) fn base_mul(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     if left.len() > right.len() {
         mul_helper(left, right, base)
     } else {
         mul_helper(right, left, base)
     }
+}
+
+pub(crate) fn mul(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
+    karatsuba(left, right, base, KARATSUBA_THRESHOLD, base_mul)
 }
 
 pub(crate) fn div(

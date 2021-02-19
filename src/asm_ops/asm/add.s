@@ -13,7 +13,8 @@ add_two_slices:
     xor r10, r10
 
     push r12
-    mov r12, 1
+    push r13
+    xor r12, r12
 
     .for_begin: ## r10 = 0, r10 < r9, r10++
         cmp r9, r10
@@ -21,18 +22,19 @@ add_two_slices:
 
             ## add from the first slice
             mov r11, [rdi]
-            add [rdx], r11
 
             ## add from the second slice
-            mov r11, [rsi]
-            add [rdx], r11
+            add r11, [rsi]
+            add r11, r12
+            xor r12, r12
 
             ## if addition result is larger than base rebase and add carry to next value
-            cmp [rdx], rcx
+            cmp r11, rcx
             jb .if_end_1
-                sub [rdx], rcx
-                add [rdx + 8], r12
+                sub r11, rcx
+                inc r12
             .if_end_1:
+            mov [rdx], r11
 
 
         lea rsi, [rsi + 8]
@@ -50,15 +52,17 @@ add_two_slices:
 
             ## add from first slice
             mov r11, [rdi]
-            add [rdx], r11
+            add r11, r12
+            xor r12, r12
 
 
             ## if addition result is larger than base rebase and add carry to next value
-            cmp [rdx], rcx
+            cmp r11, rcx
             jb .if_end_2
-                sub [rdx], rcx
-                add [rdx + 8], r12
+                sub r11, rcx
+                inc r12
             .if_end_2:
+            mov [rdx], r11
 
         lea rdx, [rdx + 8]
         lea rdi, [rdi + 8]
@@ -67,5 +71,8 @@ add_two_slices:
         jmp .for_one_slice_begin
     .for_one_slice_end:
 
+    mov [rdx], r12
+
+    pop r13
     pop r12
     ret

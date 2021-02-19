@@ -1,7 +1,5 @@
-use crate::asm_ops::{
-    add_const, add_two_slices, cmp_slices, div_const, mul_const, mul_two_slices, sub_const,
-    sub_two_slices,
-};
+use crate::asm_ops::wrapped_ops;
+use crate::asm_ops::{add_const, cmp_slices, div_const, mul_const, sub_const, sub_two_slices};
 use crate::errors::ArithmeticError;
 use crate::utils::{bit_len, trim_zeros};
 
@@ -21,16 +19,7 @@ fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
 
     let mut repr = vec![0; m + n];
 
-    unsafe {
-        mul_two_slices(
-            left.as_ptr(),
-            right.as_ptr(),
-            repr.as_mut_ptr(),
-            base,
-            m as u64,
-            n as u64,
-        );
-    }
+    wrapped_ops::unsafe_mul_two_slices(&left, &right, &mut repr, base);
 
     while let Some(v) = repr.last() {
         if *v == 0 {
@@ -58,20 +47,8 @@ pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     let size = usize::max(l.len(), r.len());
     dst.resize(size + 1, 0);
 
-    unsafe {
-        add_two_slices(
-            l.as_ptr(),
-            r.as_ptr(),
-            dst.as_mut_ptr(),
-            base,
-            l.len() as u64,
-            r.len() as u64,
-        );
-    }
-
-    if *dst.last().unwrap() == 0 {
-        dst.pop();
-    }
+    wrapped_ops::unsafe_add_two_slices(&l, &r, &mut dst, base);
+    trim_zeros(&mut dst);
     dst
 }
 
@@ -113,17 +90,7 @@ pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
     let size = usize::max(l.len(), r.len());
     dst.resize(size, 0);
 
-    unsafe {
-        sub_two_slices(
-            l.as_ptr(),
-            r.as_ptr(),
-            dst.as_mut_ptr(),
-            base,
-            l.len() as u64,
-            r.len() as u64,
-        );
-    }
-
+    wrapped_ops::unsafe_sub_two_slices(&l, &r, &mut dst, base);
     trim_zeros(&mut dst);
 
     if dst.is_empty() {

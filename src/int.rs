@@ -3,22 +3,18 @@ use std::fmt;
 use std::ops;
 
 use crate::base_ops;
-use crate::conversions::{convert, convert_from_string};
-use crate::utils::cmp_repr;
+use crate::conversions::{convert_from_internal, convert_from_string, convert_to_internal};
+use crate::utils::{cmp_repr, internal_repr};
 
 #[derive(Debug, Clone)]
 pub struct Int {
-    base: u64,
     sign: i8,
     repr: Vec<u64>,
 }
 
 impl Int {
-    // 2^32
-    const BASE: u64 = 4294967296;
     pub fn zero() -> Int {
         Int {
-            base: Int::BASE,
             sign: 0,
             repr: Vec::new(),
         }
@@ -26,7 +22,6 @@ impl Int {
 
     pub fn one() -> Int {
         Int {
-            base: Int::BASE,
             sign: 1,
             repr: Vec::from([1]),
         }
@@ -37,22 +32,14 @@ impl Int {
         if value == 0 {
             sign = 0;
         }
-        let repr = base_ops::new_repr(value, Int::BASE);
+        let repr = internal_repr(value);
 
-        Int {
-            base: Int::BASE,
-            sign,
-            repr,
-        }
+        Int { sign, repr }
     }
 
     pub fn from_repr(base: u64, repr: Vec<u64>, sign: i8) -> Int {
-        let repr = convert(base, Int::BASE, &repr);
-        Int {
-            base: Int::BASE,
-            sign,
-            repr,
-        }
+        let repr = convert_to_internal(base, &repr);
+        Int { sign, repr }
     }
 }
 
@@ -61,16 +48,15 @@ impl_op_ex!(+ |a: &Int, b: &Int| -> Int {
     let repr;
 
     if a.sign == b.sign {
-        repr = base_ops::add(&a.repr, &b.repr, a.base);
+        repr = base_ops::add(&a.repr, &b.repr);
         sign = a.sign;
     } else {
-        let (s, r) = base_ops::sub(&a.repr, &b.repr, a.base);
+        let (s, r) = base_ops::sub(&a.repr, &b.repr);
         sign = s * a.sign;
         repr = r;
     }
 
     Int {
-        base: a.base,
         sign,
         repr,
     }
@@ -81,40 +67,34 @@ impl_op_ex!(-|a: &Int, b: &Int| -> Int {
     let repr;
 
     if a.sign == b.sign {
-        let (s, r) = base_ops::sub(&a.repr, &b.repr, a.base);
+        let (s, r) = base_ops::sub(&a.repr, &b.repr);
         sign = s * a.sign;
         repr = r;
     } else {
-        repr = base_ops::add(&a.repr, &b.repr, a.base);
+        repr = base_ops::add(&a.repr, &b.repr);
         sign = a.sign;
     }
 
-    Int {
-        base: a.base,
-        sign,
-        repr,
-    }
+    Int { sign, repr }
 });
 
 impl_op_ex!(*|a: &Int, b: &Int| -> Int {
-    let repr = base_ops::mul(&a.repr, &b.repr, a.base);
+    let repr = base_ops::mul(&a.repr, &b.repr);
 
     Int {
-        base: a.base,
         sign: a.sign * b.sign,
         repr,
     }
 });
 
 impl_op_ex!(/ |a: &Int, b: &Int| -> Int {
-    let repr = base_ops::div(&a.repr, &b.repr, a.base);
+    let repr = base_ops::div(&a.repr, &b.repr);
 
     match repr {
         Err(_) => panic!("Division by zero"),
         Ok(v) => {
             let (q, _r) = v;
             return Int {
-                base: a.base,
                 sign: a.sign * b.sign,
                 repr: q,
             };
@@ -123,14 +103,13 @@ impl_op_ex!(/ |a: &Int, b: &Int| -> Int {
 });
 
 impl_op_ex!(% |a: &Int, b: &Int| -> Int {
-    let repr = base_ops::div(&a.repr, &b.repr, a.base);
+    let repr = base_ops::div(&a.repr, &b.repr);
 
     match repr {
         Err(_) => panic!("Division by zero"),
         Ok(v) => {
             let (_q, r) = v;
             return Int {
-                base: a.base,
                 sign: b.sign,
                 repr: r,
             };
@@ -148,13 +127,9 @@ impl From<(u64, &str)> for Int {
             number = &number[1..number.len()];
         }
 
-        let repr = convert_from_string(from, Int::BASE, number.to_string());
+        let repr = convert_from_string(from, number.to_string());
 
-        Int {
-            base: Int::BASE,
-            repr,
-            sign,
-        }
+        Int { repr, sign }
     }
 }
 
@@ -167,7 +142,7 @@ impl fmt::Display for Int {
         }
 
         reversed_repr.reverse();
-        let dec = convert(self.base, 10, &reversed_repr);
+        let dec = convert_from_internal(10, &reversed_repr);
         let str_repr: String = dec
             .into_iter()
             .rev()
@@ -192,7 +167,7 @@ impl PartialOrd for Int {
 
 impl PartialEq for Int {
     fn eq(&self, other: &Self) -> bool {
-        self.sign == other.sign && self.base == other.base && self.repr == other.repr
+        self.sign == other.sign && self.repr == other.repr
     }
 }
 

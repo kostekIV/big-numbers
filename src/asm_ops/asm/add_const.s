@@ -9,18 +9,15 @@ add_const:
     ## rdx - base
 
     mov r8, [rdi]
-    mov rax, rsi
+    clc
 
     .begin:
-        add r8, rax
-        xor rax, rax
-        cmp r8, rdx
-        jb .end
-        setge al
-        sub r8, rdx
+        add r8, rsi
+        jnc .end
         mov [rdi], r8
         lea rdi, [rdi + 8]
         mov r8, [rdi]
+        mov rsi, 1
         jmp .begin
     .end:
 

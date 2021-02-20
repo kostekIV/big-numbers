@@ -6,9 +6,8 @@
 mul_two_slices:
     ## rdi, rsi - adresses of slices
     ## rdx      - dst of the addition (at least len of r8 + r9)
-    ## rcx      - base
-    ## r8       - len of the larger slice
-    ## r9       - len of the smaller slice
+    ## rcx      - len of the larger slice
+    ## r8       - len of the smaller slice
 
     push r12
     push r13
@@ -21,45 +20,35 @@ mul_two_slices:
     xor r10, r10
     xor r13, r13
 
-    .outer_loop_begin: ## for r10 = 0; r10 < r8; r10++
-        cmp r8, r10
+    .outer_loop_begin: ## for r10 = 0; r10 < rcx; r10++
+        cmp rcx, r10
         jle .outer_loop_end
 
         mov r13, r10
         xor r11, r11
         xor r12, r12
-        .inner_loop_begin: ## for r11 = 0; r11 < r9; r11++
-            cmp r9, r11
+        .inner_loop_begin: ## for r11 = 0; r11 < r8; r11++
+            cmp r8, r11
             jle .inner_loop_end
 
             mov rax, [rdi + 8*r10]
             mov r14, [rsi + 8*r11]
 
             mul r14             ## rax = a[i] * b[j]
-            xor rdx, rdx
-            div rcx             ## rax = a[i] * b[j] / base, rdx = a[i] * b[j] % base
 
-            add rdx, r12        ## add carry
+            add rax, r12        ## add carry
+            jnc .if_end_1
+                inc rdx
+            .if_end_1:
 
-            ## check if rdx is bigger than base and if it is substract base and increment future carry
-            cmp rdx, rcx
-            jb .end_adjust1
-                sub rdx, rcx
-                inc rax
-            .end_adjust1:
-
-            ## add to dest[i + j] value in rdx
-            add [r15 + 8*r13], rdx
-
-            ## check if dest[i + j] is bigger than base and if it is substract base and increment future carry
-            cmp [r15 + 8*r13], rcx
-            jb .end_adjust
-                sub [r15 + 8*r13], rcx
-                inc rax
+            ## add to dest[i + j] value in rax
+            add [r15 + 8*r13], rax
+            jnc .end_adjust
+                inc rdx
             .end_adjust:
 
             ## set carry to value from rax
-            mov r12, rax
+            mov r12, rdx
 
             inc r11
             inc r13
@@ -72,9 +61,7 @@ mul_two_slices:
             cmp r12, rax
             je .end_while
             add [r15 + 8*r13], r12
-            cmp [r15 + 8*r13], rcx
-            jb .end_while
-                sub [r15 + 8*r13], rcx
+            jnc .end_while
                 mov r12, 1
                 inc r13
             jmp .begin_while

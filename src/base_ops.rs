@@ -7,7 +7,7 @@ use crate::utils::{bit_len, trim_zeros};
 const KARATSUBA_THRESHOLD: usize = 13;
 
 #[inline]
-fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
+fn mul_helper(left: &[u64], right: &[u64]) -> Vec<u64> {
     let (m, n) = (left.len(), right.len());
     if m == 1 && left[0] == 1 {
         return right.to_vec();
@@ -23,7 +23,7 @@ fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
 
     let mut repr = vec![0; m + n];
 
-    wrapped_ops::unsafe_mul_two_slices(&left, &right, &mut repr, base);
+    wrapped_ops::unsafe_mul_two_slices(&left, &right, &mut repr);
 
     while let Some(v) = repr.last() {
         if *v == 0 {
@@ -35,7 +35,7 @@ fn mul_helper(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     repr
 }
 
-pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
+pub(crate) fn add(left: &[u64], right: &[u64]) -> Vec<u64> {
     let mut dst = Vec::new();
     let l: &[u64];
     let r: &[u64];
@@ -51,13 +51,13 @@ pub(crate) fn add(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
     let size = usize::max(l.len(), r.len());
     dst.resize(size + 1, 0);
 
-    wrapped_ops::unsafe_add_two_slices(&l, &r, &mut dst, base);
+    wrapped_ops::unsafe_add_two_slices(&l, &r, &mut dst);
     trim_zeros(&mut dst);
     dst
 }
 
 #[allow(clippy::comparison_chain)]
-pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
+pub(crate) fn sub(left: &[u64], right: &[u64]) -> (i8, Vec<u64>) {
     let mut dst = Vec::new();
     let mut sign = 0;
     let mut l = left;
@@ -94,7 +94,7 @@ pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
     let size = usize::max(l.len(), r.len());
     dst.resize(size, 0);
 
-    wrapped_ops::unsafe_sub_two_slices(&l, &r, &mut dst, base);
+    wrapped_ops::unsafe_sub_two_slices(&l, &r, &mut dst);
     trim_zeros(&mut dst);
 
     if dst.is_empty() {
@@ -105,23 +105,19 @@ pub(crate) fn sub(left: &[u64], right: &[u64], base: u64) -> (i8, Vec<u64>) {
 }
 
 #[inline]
-pub(crate) fn base_mul(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
+pub(crate) fn base_mul(left: &[u64], right: &[u64]) -> Vec<u64> {
     if left.len() > right.len() {
-        mul_helper(left, right, base)
+        mul_helper(left, right)
     } else {
-        mul_helper(right, left, base)
+        mul_helper(right, left)
     }
 }
 
-pub(crate) fn mul(left: &[u64], right: &[u64], base: u64) -> Vec<u64> {
-    karatsuba(left, right, base, KARATSUBA_THRESHOLD, base_mul)
+pub(crate) fn mul(left: &[u64], right: &[u64]) -> Vec<u64> {
+    karatsuba(left, right, KARATSUBA_THRESHOLD, base_mul)
 }
 
-pub(crate) fn div(
-    left: &[u64],
-    right: &[u64],
-    base: u64,
-) -> Result<(Vec<u64>, Vec<u64>), ArithmeticError> {
+pub(crate) fn div(left: &[u64], right: &[u64]) -> Result<(Vec<u64>, Vec<u64>), ArithmeticError> {
     if right.is_empty() {
         return Err(ArithmeticError::DividedByZero);
     }
@@ -131,7 +127,7 @@ pub(crate) fn div(
     } else if right.len() == 1 {
         let mut l = left.to_vec();
         l.reverse();
-        let remainder = unsafe { div_const(l.as_mut_ptr(), right[0], base, l.len() as u64) };
+        let remainder = unsafe { div_const(l.as_mut_ptr(), right[0], l.len() as u64) };
         l.reverse();
 
         let remainder_repr = if remainder == 0 {
@@ -139,7 +135,7 @@ pub(crate) fn div(
         } else {
             Vec::from([remainder])
         };
-
+        trim_zeros(&mut l);
         return Ok((l, remainder_repr));
     } else if right.len() > left.len() {
         return Ok((Vec::from([]), left.to_vec()));
@@ -158,20 +154,19 @@ pub(crate) fn div(
     let mut qp_copy = vec![0; 3];
     let mut vq;
 
-    let d = u64::pow(2, bit_len(base) - bit_len(v[n - 1]) - 1);
+    let d = u64::pow(2, bit_len(u64::MAX) - bit_len(v[n - 1]));
 
     unsafe {
-        mul_const(u.as_mut_ptr(), d, base, (u.len() - 1) as u64);
-        mul_const(v.as_mut_ptr(), d, base, v.len() as u64);
+        mul_const(u.as_mut_ptr(), d, (u.len() - 1) as u64);
+        mul_const(v.as_mut_ptr(), d, v.len() as u64);
     }
-
     let (vn_1, vn_2) = (v[n - 1], v[n - 2]);
 
     for j in (0..(m - n + 1)).rev() {
         qp[1] = u[j + n - 1];
         qp[0] = u[j + n];
-        let remainder = unsafe { div_const(qp.as_mut_ptr(), vn_1, base, 2) };
 
+        let remainder = unsafe { div_const(qp.as_mut_ptr(), vn_1, 2) };
         qp.reverse();
 
         r[0] = remainder;
@@ -179,9 +174,9 @@ pub(crate) fn div(
 
         loop {
             if qp == [0, 1] {
-                qp[0] = base - 1;
+                qp[0] = u64::MAX;
                 qp[1] = 0;
-                unsafe { add_const(r.as_mut_ptr(), vn_1, base) }
+                unsafe { add_const(r.as_mut_ptr(), vn_1) }
             } else {
                 qp_copy[0] = qp[0];
                 qp_copy[1] = qp[1];
@@ -190,13 +185,13 @@ pub(crate) fn div(
                 br_u[0] = u[j + n - 2];
                 br_u[1] = r[0];
 
-                unsafe { mul_const(qp_copy.as_mut_ptr(), vn_2, base, 2) };
+                unsafe { mul_const(qp_copy.as_mut_ptr(), vn_2, 2) };
 
                 if qp_copy[2] != 0 || unsafe { cmp_slices(qp_copy.as_ptr(), br_u.as_ptr(), 2) } == 1
                 {
                     unsafe {
-                        sub_const(qp.as_mut_ptr(), 1, base);
-                        add_const(r.as_mut_ptr(), vn_1, base);
+                        sub_const(qp.as_mut_ptr(), 1);
+                        add_const(r.as_mut_ptr(), vn_1);
                     }
                 } else {
                     break;
@@ -213,13 +208,12 @@ pub(crate) fn div(
 
         if !qp.is_empty() {
             unsafe {
-                mul_const(vq.as_mut_ptr(), qp[0], base, n as u64);
+                mul_const(vq.as_mut_ptr(), qp[0], n as u64);
                 if cmp_slices(vq.as_ptr(), u.as_ptr().offset(j as isize), (n + 1) as u64) == 1 {
                     sub_two_slices(
                         vq.as_ptr(),
                         v.as_ptr(),
                         vq.as_mut_ptr(),
-                        base,
                         (n + 1) as u64,
                         (n + 1) as u64,
                     );
@@ -229,10 +223,10 @@ pub(crate) fn div(
                     u.as_ptr().offset(j as isize),
                     vq.as_ptr(),
                     u.as_mut_ptr().offset(j as isize),
-                    base,
                     (n + 1) as u64,
                     (n + 1) as u64,
                 );
+                trim_zeros(&mut vq);
             }
             q[j] = qp[0];
         } else {
@@ -242,32 +236,13 @@ pub(crate) fn div(
 
     u.reverse();
     unsafe {
-        div_const(
-            u.as_mut_ptr().offset((m - n + 1) as isize),
-            d,
-            base,
-            n as u64,
-        );
+        div_const(u.as_mut_ptr().offset((m - n + 1) as isize), d, n as u64);
     }
     u.reverse();
 
     trim_zeros(&mut q);
     trim_zeros(&mut u);
     return Ok((q.to_vec(), u.to_vec()));
-}
-
-pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
-    let mut repr = Vec::new();
-    let mut value = value;
-    while value >= base {
-        repr.push(value % base);
-        value /= base;
-    }
-    if value > 0 {
-        repr.push(value);
-    }
-
-    repr
 }
 
 #[cfg(test)]
@@ -279,9 +254,9 @@ mod tests {
         let a = Vec::from([9, 9, 2, 8, 9]);
         let b = Vec::from([1, 2, 2, 8, 9]);
 
-        let c = Vec::from([0, 2, 5, 6, 9, 1]);
+        let c = Vec::from([10, 11, 4, 16, 18]);
 
-        assert_eq!(c, add(&a, &b, 10));
+        assert_eq!(c, add(&a, &b));
     }
 
     #[test]
@@ -289,9 +264,9 @@ mod tests {
         let a = Vec::from([9]);
         let b = Vec::from([1, 9, 9, 9, 9]);
 
-        let c = Vec::from([0, 0, 0, 0, 0, 1]);
+        let c = Vec::from([10, 9, 9, 9, 9]);
 
-        assert_eq!(c, add(&a, &b, 10));
+        assert_eq!(c, add(&a, &b));
     }
 
     #[test]
@@ -301,27 +276,29 @@ mod tests {
 
         let c = (1, Vec::from([8, 7]));
 
-        assert_eq!(c, sub(&a, &b, 10));
+        assert_eq!(c, sub(&a, &b));
     }
 
     #[test]
     fn sub_reversed_digits_not_even_sizes() {
+        let x = u64::MAX;
         let a = Vec::from([9]);
         let b = Vec::from([1, 9, 9, 9, 9]);
 
-        let c = (-1, Vec::from([2, 8, 9, 9, 9]));
+        let c = (-1, Vec::from([x - 7, 8, 9, 9, 9]));
 
-        assert_eq!(c, sub(&a, &b, 10));
+        assert_eq!(c, sub(&a, &b));
     }
 
     #[test]
     fn sub_reversed_digits_not_even_sizes2() {
+        let x = u64::MAX;
         let a = Vec::from([9, 8, 2]);
         let b = Vec::from([1, 9, 9, 9, 9]);
 
-        let c = (-1, Vec::from([2, 0, 7, 9, 9]));
+        let c = (-1, Vec::from([x - 7, 0, 7, 9, 9]));
 
-        assert_eq!(c, sub(&a, &b, 10));
+        assert_eq!(c, sub(&a, &b));
     }
 
     #[test]
@@ -331,7 +308,7 @@ mod tests {
 
         let c = Vec::from([6, 6, 6]);
 
-        assert_eq!(c, mul(&a, &b, 10));
+        assert_eq!(c, mul(&a, &b));
     }
 
     #[test]
@@ -339,9 +316,9 @@ mod tests {
         let a = Vec::from([2, 2, 2, 4, 5, 6]);
         let b = Vec::from([3]);
 
-        let c = Vec::from([6, 6, 6, 2, 6, 9, 1]);
+        let c = Vec::from([6, 6, 6, 12, 15, 18]);
 
-        assert_eq!(c, mul(&a, &b, 10));
+        assert_eq!(c, mul(&a, &b));
     }
 
     #[test]
@@ -352,7 +329,7 @@ mod tests {
         let c = Vec::from([3, 3, 3, 3, 3]);
         let d: Vec<u64> = Vec::from([]);
 
-        let (q, r) = div(&a, &b, 10)?;
+        let (q, r) = div(&a, &b)?;
 
         assert_eq!(c, q);
         assert_eq!(d, r);
@@ -365,10 +342,10 @@ mod tests {
         let a = Vec::from([5, 2, 1]);
         let b = Vec::from([4]);
 
-        let c = Vec::from([1, 3, 0]);
+        let c = [9223372036854775809, 4611686018427387904].to_vec();
         let d = Vec::from([1]);
 
-        let (q, r) = div(&a, &b, 10)?;
+        let (q, r) = div(&a, &b)?;
 
         assert_eq!(c, q);
         assert_eq!(d, r);
@@ -384,7 +361,7 @@ mod tests {
         let c = Vec::from([0, 0, 0, 0, 1]);
         let d: Vec<u64> = Vec::from([]);
 
-        let (q, r) = div(&a, &b, 2)?;
+        let (q, r) = div(&a, &b)?;
 
         assert_eq!(c, q);
         assert_eq!(d, r);
@@ -397,7 +374,7 @@ mod tests {
         let a = Vec::from([0, 0, 0, 0, 1]);
         let b = Vec::from([]);
 
-        match div(&a, &b, 10) {
+        match div(&a, &b) {
             Ok(_) => assert!(false, "Should throw error"),
             Err(_) => assert!(true),
         }
@@ -410,7 +387,7 @@ mod tests {
         let a = Vec::from([9, 9, 9]);
         let b = Vec::from([3, 3]);
 
-        let (q, r) = div(&a, &b, 10)?;
+        let (q, r) = div(&a, &b)?;
 
         let c = Vec::from([0, 3]);
         let d = Vec::from([9]);
@@ -426,7 +403,7 @@ mod tests {
         let a = Vec::from([1, 2, 1]);
         let b = Vec::from([1, 1]);
 
-        let (q, r) = div(&a, &b, 10)?;
+        let (q, r) = div(&a, &b)?;
 
         let c = Vec::from([1, 1]);
         let d: Vec<u64> = Vec::from([]);
@@ -442,13 +419,19 @@ mod tests {
         let a = Vec::from([0, 0, 0, 9, 9, 1, 2]);
         let b = Vec::from([4, 3]);
 
-        let (q, r) = div(&a, &b, 10)?;
+        let (q, r) = div(&a, &b)?;
 
-        let c = Vec::from([6, 7, 6, 4, 6]);
-        let d: Vec<u64> = Vec::from([6, 1]);
+        let c = Vec::from([
+            6756214907654938654,
+            17991268911395735529,
+            9564978408590137872,
+            2049638230412172405,
+            12297829382473034410,
+        ]);
+        let d: Vec<u64> = Vec::from([9868628516799348616]);
 
-        assert_eq!(c, q);
         assert_eq!(d, r);
+        assert_eq!(c, q);
 
         Ok(())
     }

@@ -7,61 +7,124 @@ div_const:
     ## Params:
     ## rdi - dst of the division
     ## rsi - const that rdi will be divided by
-    ## rdx - base
-    ## rcx - len of rdi
+    ## rdx - len of rdi
     ## Returns:
     ## rax - remainder of the division
 
     push r12
     push r13
     push r14
+    push r15
 
     xor r8, r8
+    mov r9, rdx
 
-    mov rax, rdx
+    mov rax, -1
     xor rdx, rdx
 
-    div rsi            ## base = rsi * rax + rdx
-    mov r10, rax       ## base = rsi * r10 + rdx
-    mov r13, rdx       ## base = rsi * r10 + r13
+    div rsi            ## 2^64 - 1 = rsi * rax + rdx
+    mov r10, rax       ## 2^64 - 1 = rsi * r10 + rdx
+    mov r11, rdx       ## 2^64 - 1 = rsi * r10 + r11
 
-    xor r11, r11
+    inc r11
 
-    .begin_loop:
-    cmp rcx, r8
-    jle .end_loop
+    cmp rsi, r11
+    ja .skip_adj
+        inc r10
+        sub r11, rsi
+    .skip_adj:
 
-    mov r14, [rdi]
+    ## 2^64 = rsi * r10 + r11
+
 
     xor r12, r12
-    cmp r11, r12
-    je .acc_empty
-        mov rax, r13
-        mul r11
-        add r14, rax
-        mov rax, r10
-        mul r11
-        mov r12, rax
-    .acc_empty:
+    mov r14, 1
 
-    mov r11, r14
-    cmp r14, rsi
-    jb .loop_epilogue
-        mov rax, r14
-        xor rdx, rdx
-        div rsi
-        add r12, rax
-        mov r11, rdx
-    .loop_epilogue:
+    .begin_loop:
+    cmp r9, r8
+    jle .end_loop
 
-    mov [rdi], r12
-    lea rdi, [rdi + 8]
-    inc r8
+        cmp r12, 0
+        je .set_value
+            mov r13, [rdi]
+            mov rax, r12
+            mul r10 ## no overflow
+            mov [rdi], rax
+
+            mov rax, r12
+            mul r11
+
+            jnc .no_carry
+                .carry:
+                push rax
+                push rdx
+                mov rax, rdx
+                mul r10
+                add [rdi], rax
+
+                pop rax
+                mul r11
+                pop r14
+                add rax, r14
+                jnc .no_add_carry
+                    inc rdx
+                .no_add_carry:
+                cmp rdx, 0
+                jne .carry
+            .no_carry:
+
+            mov rdx, 1
+            add rax, r13
+
+            jnc .no_carry_2
+                .carry_2:
+                push rax
+                push rdx
+                mov rax, 1
+                mul r10
+                add [rdi], rax
+
+                pop rax
+                mul r11
+                pop r14
+                add rax, r14
+                jnc .no_add_carry_2
+                    inc rdx
+                .no_add_carry_2:
+                cmp rdx, 0
+                jne .carry_2
+
+            .no_carry_2:
+            mov r12, rax
+
+
+
+            jmp .after_set
+        .set_value:
+            mov r12, [rdi]
+            xor r13, r13
+            mov [rdi], r13
+        .after_set:
+
+
+        cmp r12, rsi
+        jb .skip
+            mov rax, r12
+            xor rdx, rdx
+            div rsi
+            add [rdi], rax
+            mov r12, rdx
+        .skip:
+            ## nop
+
+        inc r8
+        lea rdi, [rdi + 8]
     jmp .begin_loop
     .end_loop:
 
-    mov rax, r11
+    mov rax, r12
 
+    pop r15
     pop r14
     pop r13
     pop r12

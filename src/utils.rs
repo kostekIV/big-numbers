@@ -44,6 +44,26 @@ pub(crate) fn cmp_repr(left: &[u64], right: &[u64]) -> Ordering {
     }
 }
 
+#[inline]
+pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
+    let mut repr = Vec::new();
+    let mut value = value;
+    while value >= base {
+        repr.push(value % base);
+        value /= base;
+    }
+    if value > 0 {
+        repr.push(value);
+    }
+
+    repr
+}
+
+#[inline]
+pub(crate) fn internal_repr(value: u64) -> Vec<u64> {
+    Vec::from([value])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

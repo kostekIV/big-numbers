@@ -68,3 +68,16 @@ fn rem_bench(ben: &mut Bencher) {
 
     ben.iter(|| n_rems(&a, &b, 100));
 }
+
+#[bench]
+fn factorial(ben: &mut Bencher) {
+    fn fact(n: u64) -> Int {
+        if n == 0 {
+            Int::one()
+        } else {
+            Int::new(n, true) * fact(n - 1)
+        }
+    }
+
+    ben.iter(|| fact(5000));
+}

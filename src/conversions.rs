@@ -1,18 +1,43 @@
-use crate::base_ops::{add, mul, new_repr};
+use crate::asm_ops::div_const;
+use crate::base_ops::{add, mul};
+use crate::utils::internal_repr;
 
-pub(crate) fn convert(from: u64, to: u64, numbers: &[u64]) -> Vec<u64> {
+pub(crate) fn convert_to_internal(from: u64, numbers: &[u64]) -> Vec<u64> {
     let mut new_vec = Vec::new();
-    let bv = new_repr(from, to);
+    let bv = internal_repr(from);
 
     for number in numbers {
-        let v = new_repr(*number, to);
-        new_vec = add(&mul(&new_vec, &bv, to), &v, to);
+        let v = internal_repr(*number);
+        new_vec = add(&mul(&new_vec, &bv), &v);
     }
 
     new_vec
 }
 
-pub(crate) fn convert_from_string(from: u64, to: u64, number: String) -> Vec<u64> {
+pub(crate) fn convert_from_internal(to: u64, numbers: &[u64]) -> Vec<u64> {
+    let mut nrs = numbers.to_vec();
+    let mut repr = Vec::new();
+
+    while !nrs.is_empty() {
+        let remainder = unsafe { div_const(nrs.as_mut_ptr(), to, nrs.len() as u64) };
+        repr.push(remainder);
+        let mut i = 0;
+        for x in nrs.iter() {
+            if *x == 0 {
+                i += 1;
+            } else {
+                break;
+            }
+        }
+        if i > 0 {
+            nrs.drain(0..i);
+        }
+    }
+
+    repr
+}
+
+pub(crate) fn convert_from_string(from: u64, number: String) -> Vec<u64> {
     let numbers: Vec<_> = number
         .chars()
         .map(|x| x.to_digit(from as u32))
@@ -21,7 +46,7 @@ pub(crate) fn convert_from_string(from: u64, to: u64, number: String) -> Vec<u64
         .collect();
     assert!(numbers.len() == number.len());
 
-    convert(from, to, &numbers)
+    convert_to_internal(from, &numbers)
 }
 
 #[cfg(test)]
@@ -32,43 +57,34 @@ mod tests {
     fn simple_base() {
         let number = "10".to_string();
 
-        let r = convert_from_string(10, 2, number);
+        let r = convert_from_string(10, number);
 
-        assert_eq!(vec![0, 1, 0, 1], r);
+        assert_eq!(vec![10], r);
     }
 
     #[test]
     fn smaller_to_larger() {
         let number = "1111111".to_string();
 
-        let r = convert_from_string(2, 3, number);
+        let r = convert_from_string(2, number);
 
-        assert_eq!(vec![1, 0, 2, 1, 1], r);
+        assert_eq!(vec![127], r);
     }
 
     #[test]
     fn smaller_to_much_larger() {
         let number = "100000".to_string();
 
-        let r = convert_from_string(10, 1000000000, number);
+        let r = convert_from_string(10, number);
 
         assert_eq!(vec![100000], r);
-    }
-
-    #[test]
-    fn larger_to_smaller() {
-        let number = vec![286, 3051653344];
-
-        let r = convert(4294967296, 10, &number);
-
-        assert_eq!(vec![0, 0, 0, 0, 0, 3, 2, 1, 4, 1, 3, 2, 1], r);
     }
 
     #[test]
     fn zero() {
         let number = "00000000000".to_string();
 
-        let r = convert_from_string(10, 1000, number);
+        let r = convert_from_string(10, number);
 
         assert_eq!(vec![0; 0], r);
     }

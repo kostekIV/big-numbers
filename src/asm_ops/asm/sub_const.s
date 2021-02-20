@@ -6,18 +6,15 @@
 sub_const:
     ## rdi - dst of the substraction
     ## rsi - const to be subbed from rdi
-    ## rdx - base
 
     mov r8, [rdi]
     mov rax, rsi
 
     .begin:
-        cmp rax, r8
-        jbe .end
-        add r8, rdx
         sub r8, rax
-        mov rax, 1
+        jae .end
         mov [rdi], r8
+        mov rax, 1
         lea rdi, [rdi + 8]
         mov r8, [rdi]
         jmp .begin

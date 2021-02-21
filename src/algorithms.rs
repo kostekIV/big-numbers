@@ -1,7 +1,7 @@
-use crate::IntLimb;
 use crate::asm_ops::wrapped_ops;
 use crate::asm_ops::{add_two_slices, sub_two_slices};
 use crate::utils::trim_zeros;
+use crate::IntLimb;
 
 type MulFunction = fn(&[IntLimb], &[IntLimb]) -> Vec<IntLimb>;
 

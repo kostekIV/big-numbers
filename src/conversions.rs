@@ -1,7 +1,7 @@
-use crate::IntLimb;
 use crate::asm_ops::div_const;
 use crate::base_ops::{add, mul};
 use crate::utils::internal_repr;
+use crate::IntLimb;
 
 pub(crate) fn convert_to_internal(from: IntLimb, numbers: &[IntLimb]) -> Vec<IntLimb> {
     let mut new_vec = Vec::new();

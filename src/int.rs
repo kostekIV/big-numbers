@@ -2,10 +2,10 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::ops;
 
-use crate::IntLimb;
 use crate::base_ops;
 use crate::conversions::{convert_from_internal, convert_from_string, convert_to_internal};
 use crate::utils::{cmp_repr, internal_repr};
+use crate::IntLimb;
 
 #[derive(Debug, Clone)]
 pub struct Int {

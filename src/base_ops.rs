@@ -1,9 +1,9 @@
-use crate::IntLimb;
 use crate::algorithms::karatsuba;
 use crate::asm_ops::wrapped_ops;
 use crate::asm_ops::{add_const, cmp_slices, div_const, mul_const, sub_const, sub_two_slices};
 use crate::errors::ArithmeticError;
 use crate::utils::{bit_len, trim_zeros};
+use crate::IntLimb;
 
 const KARATSUBA_THRESHOLD: usize = 13;
 
@@ -118,7 +118,10 @@ pub(crate) fn mul(left: &[IntLimb], right: &[IntLimb]) -> Vec<IntLimb> {
     karatsuba(left, right, KARATSUBA_THRESHOLD, base_mul)
 }
 
-pub(crate) fn div(left: &[IntLimb], right: &[IntLimb]) -> Result<(Vec<IntLimb>, Vec<IntLimb>), ArithmeticError> {
+pub(crate) fn div(
+    left: &[IntLimb],
+    right: &[IntLimb],
+) -> Result<(Vec<IntLimb>, Vec<IntLimb>), ArithmeticError> {
     if right.is_empty() {
         return Err(ArithmeticError::DividedByZero);
     }
@@ -210,7 +213,12 @@ pub(crate) fn div(left: &[IntLimb], right: &[IntLimb]) -> Result<(Vec<IntLimb>, 
         if !qp.is_empty() {
             unsafe {
                 mul_const(vq.as_mut_ptr(), qp[0], n as IntLimb);
-                if cmp_slices(vq.as_ptr(), u.as_ptr().offset(j as isize), (n + 1) as IntLimb) == 1 {
+                if cmp_slices(
+                    vq.as_ptr(),
+                    u.as_ptr().offset(j as isize),
+                    (n + 1) as IntLimb,
+                ) == 1
+                {
                     sub_two_slices(
                         vq.as_ptr(),
                         v.as_ptr(),

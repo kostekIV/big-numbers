@@ -1,9 +1,27 @@
 use crate::IntLimb;
 
 extern "C" {
-    pub(crate) fn add_two_slices(a: *const IntLimb, b: *const IntLimb, dest: *mut IntLimb, n1: IntLimb, n2: IntLimb);
-    pub(crate) fn sub_two_slices(a: *const IntLimb, b: *const IntLimb, dest: *mut IntLimb, n1: IntLimb, n2: IntLimb);
-    pub(crate) fn mul_two_slices(a: *const IntLimb, b: *const IntLimb, dest: *mut IntLimb, n1: IntLimb, n2: IntLimb);
+    pub(crate) fn add_two_slices(
+        a: *const IntLimb,
+        b: *const IntLimb,
+        dest: *mut IntLimb,
+        n1: IntLimb,
+        n2: IntLimb,
+    );
+    pub(crate) fn sub_two_slices(
+        a: *const IntLimb,
+        b: *const IntLimb,
+        dest: *mut IntLimb,
+        n1: IntLimb,
+        n2: IntLimb,
+    );
+    pub(crate) fn mul_two_slices(
+        a: *const IntLimb,
+        b: *const IntLimb,
+        dest: *mut IntLimb,
+        n1: IntLimb,
+        n2: IntLimb,
+    );
 }
 
 extern "C" {
@@ -25,9 +43,21 @@ pub mod wrapped_ops {
         assert!(d.len() >= usize::max(n, m) + 1);
         unsafe {
             if n > m {
-                super::add_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as IntLimb, m as IntLimb);
+                super::add_two_slices(
+                    a.as_ptr(),
+                    b.as_ptr(),
+                    d.as_mut_ptr(),
+                    n as IntLimb,
+                    m as IntLimb,
+                );
             } else {
-                super::add_two_slices(b.as_ptr(), a.as_ptr(), d.as_mut_ptr(), m as IntLimb, n as IntLimb);
+                super::add_two_slices(
+                    b.as_ptr(),
+                    a.as_ptr(),
+                    d.as_mut_ptr(),
+                    m as IntLimb,
+                    n as IntLimb,
+                );
             }
         }
     }
@@ -36,7 +66,13 @@ pub mod wrapped_ops {
         let (n, m) = (a.len(), b.len());
         assert!(d.len() >= usize::max(n, m) && n >= m);
         unsafe {
-            super::sub_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as IntLimb, m as IntLimb);
+            super::sub_two_slices(
+                a.as_ptr(),
+                b.as_ptr(),
+                d.as_mut_ptr(),
+                n as IntLimb,
+                m as IntLimb,
+            );
         }
     }
 
@@ -44,7 +80,13 @@ pub mod wrapped_ops {
         let (n, m) = (a.len(), b.len());
         assert!(d.len() >= n + m);
         unsafe {
-            super::mul_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as IntLimb, m as IntLimb);
+            super::mul_two_slices(
+                a.as_ptr(),
+                b.as_ptr(),
+                d.as_mut_ptr(),
+                n as IntLimb,
+                m as IntLimb,
+            );
         }
     }
 }

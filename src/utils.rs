@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
-use crate::IntLimb;
 use crate::asm_ops::cmp_slices;
+use crate::IntLimb;
 
 #[inline]
 pub(crate) fn trim_zeros(x: &mut Vec<IntLimb>) {

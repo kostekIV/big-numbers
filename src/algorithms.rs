@@ -1,41 +1,42 @@
 use crate::asm_ops::wrapped_ops;
 use crate::asm_ops::{add_two_slices, sub_two_slices};
 use crate::utils::trim_zeros;
+use crate::IntLimb;
 
-type MulFunction = fn(&[u64], &[u64]) -> Vec<u64>;
+type MulFunction = fn(&[IntLimb], &[IntLimb]) -> Vec<IntLimb>;
 
 #[inline]
-fn add_helper(dest: &mut [u64], a: &[u64], l: u64, offset: isize) {
+fn add_helper(dest: &mut [IntLimb], a: &[IntLimb], l: IntLimb, offset: isize) {
     if a.is_empty() {
         return;
     }
     unsafe {
-        if l > a.len() as u64 {
+        if l > a.len() as IntLimb {
             add_two_slices(
                 dest.as_ptr().offset(offset),
                 a.as_ptr(),
                 dest.as_mut_ptr().offset(offset),
-                a.len() as u64,
-                a.len() as u64,
+                a.len() as IntLimb,
+                a.len() as IntLimb,
             );
         } else {
             add_two_slices(
                 a.as_ptr(),
                 dest.as_ptr().offset(offset),
                 dest.as_mut_ptr().offset(offset),
-                a.len() as u64,
-                a.len() as u64,
+                a.len() as IntLimb,
+                a.len() as IntLimb,
             );
         }
     }
 }
 
 pub(crate) fn karatsuba(
-    a: &[u64],
-    b: &[u64],
+    a: &[IntLimb],
+    b: &[IntLimb],
     threshold: usize,
     mul_function: MulFunction,
-) -> Vec<u64> {
+) -> Vec<IntLimb> {
     let (n, m) = (a.len(), b.len());
 
     if n <= threshold || m <= threshold {
@@ -83,8 +84,8 @@ pub(crate) fn karatsuba(
                 z1.as_ptr(),
                 z2.as_ptr(),
                 z1.as_mut_ptr(),
-                z1.len() as u64,
-                z2.len() as u64,
+                z1.len() as IntLimb,
+                z2.len() as IntLimb,
             );
         }
 
@@ -95,16 +96,16 @@ pub(crate) fn karatsuba(
                 z1.as_ptr(),
                 z0.as_ptr(),
                 z1.as_mut_ptr(),
-                z1.len() as u64,
-                z0.len() as u64,
+                z1.len() as IntLimb,
+                z0.len() as IntLimb,
             );
         }
 
         trim_zeros(&mut z1);
 
-        add_helper(&mut dest, &z0, l as u64, 0);
-        add_helper(&mut dest, &z1, l as u64, l as isize);
-        add_helper(&mut dest, &z2, l as u64, 2 * l as isize);
+        add_helper(&mut dest, &z0, l as IntLimb, 0);
+        add_helper(&mut dest, &z1, l as IntLimb, l as isize);
+        add_helper(&mut dest, &z2, l as IntLimb, 2 * l as isize);
     }
 
     trim_zeros(&mut dest);

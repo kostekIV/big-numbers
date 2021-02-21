@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate impl_ops;
 
+type IntLimb = usize;
+
 pub mod errors;
 pub mod int;
 

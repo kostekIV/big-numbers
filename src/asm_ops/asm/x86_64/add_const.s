@@ -9,7 +9,6 @@ add_const:
     ## rdx - base
 
     mov r8, [rdi]
-    clc
 
     .begin:
         add r8, rsi

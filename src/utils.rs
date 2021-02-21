@@ -1,9 +1,10 @@
 use std::cmp::Ordering;
 
 use crate::asm_ops::cmp_slices;
+use crate::IntLimb;
 
 #[inline]
-pub(crate) fn trim_zeros(x: &mut Vec<u64>) {
+pub(crate) fn trim_zeros(x: &mut Vec<IntLimb>) {
     while let Some(v) = x.last() {
         if *v == 0 {
             x.pop();
@@ -14,7 +15,7 @@ pub(crate) fn trim_zeros(x: &mut Vec<u64>) {
 }
 
 #[inline]
-pub(crate) fn bit_len(x: u64) -> u32 {
+pub(crate) fn bit_len(x: IntLimb) -> u32 {
     let mut i = 0;
     let mut x = x;
     while x > 0 {
@@ -26,14 +27,14 @@ pub(crate) fn bit_len(x: u64) -> u32 {
 }
 
 #[inline]
-pub(crate) fn cmp_repr(left: &[u64], right: &[u64]) -> Ordering {
+pub(crate) fn cmp_repr(left: &[IntLimb], right: &[IntLimb]) -> Ordering {
     let (n, m) = (left.len(), right.len());
 
     match n.cmp(&m) {
         Ordering::Less => return Ordering::Less,
         Ordering::Greater => return Ordering::Greater,
         Ordering::Equal => {
-            let cmp_res = unsafe { cmp_slices(left.as_ptr(), right.as_ptr(), n as u64) };
+            let cmp_res = unsafe { cmp_slices(left.as_ptr(), right.as_ptr(), n as IntLimb) };
             match cmp_res {
                 -1 => return Ordering::Less,
                 0 => return Ordering::Equal,
@@ -45,7 +46,7 @@ pub(crate) fn cmp_repr(left: &[u64], right: &[u64]) -> Ordering {
 }
 
 #[inline]
-pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
+pub(crate) fn new_repr(value: IntLimb, base: IntLimb) -> Vec<IntLimb> {
     let mut repr = Vec::new();
     let mut value = value;
     while value >= base {
@@ -60,7 +61,7 @@ pub(crate) fn new_repr(value: u64, base: u64) -> Vec<u64> {
 }
 
 #[inline]
-pub(crate) fn internal_repr(value: u64) -> Vec<u64> {
+pub(crate) fn internal_repr(value: IntLimb) -> Vec<IntLimb> {
     Vec::from([value])
 }
 
@@ -103,7 +104,7 @@ mod tests {
             (3, 2),
             (4, 3),
             (156, 8),
-            (u64::pow(2, 32), 33),
+            (IntLimb::pow(2, 32), 33),
         ];
 
         for input in test_inputs.iter() {

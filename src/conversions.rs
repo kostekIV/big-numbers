@@ -1,8 +1,9 @@
+use crate::IntLimb;
 use crate::asm_ops::div_const;
 use crate::base_ops::{add, mul};
 use crate::utils::internal_repr;
 
-pub(crate) fn convert_to_internal(from: u64, numbers: &[u64]) -> Vec<u64> {
+pub(crate) fn convert_to_internal(from: IntLimb, numbers: &[IntLimb]) -> Vec<IntLimb> {
     let mut new_vec = Vec::new();
     let bv = internal_repr(from);
 
@@ -14,12 +15,12 @@ pub(crate) fn convert_to_internal(from: u64, numbers: &[u64]) -> Vec<u64> {
     new_vec
 }
 
-pub(crate) fn convert_from_internal(to: u64, numbers: &[u64]) -> Vec<u64> {
+pub(crate) fn convert_from_internal(to: IntLimb, numbers: &[IntLimb]) -> Vec<IntLimb> {
     let mut nrs = numbers.to_vec();
     let mut repr = Vec::new();
 
     while !nrs.is_empty() {
-        let remainder = unsafe { div_const(nrs.as_mut_ptr(), to, nrs.len() as u64) };
+        let remainder = unsafe { div_const(nrs.as_mut_ptr(), to, nrs.len() as IntLimb) };
         repr.push(remainder);
         let mut i = 0;
         for x in nrs.iter() {
@@ -37,12 +38,12 @@ pub(crate) fn convert_from_internal(to: u64, numbers: &[u64]) -> Vec<u64> {
     repr
 }
 
-pub(crate) fn convert_from_string(from: u64, number: String) -> Vec<u64> {
+pub(crate) fn convert_from_string(from: IntLimb, number: String) -> Vec<IntLimb> {
     let numbers: Vec<_> = number
         .chars()
         .map(|x| x.to_digit(from as u32))
         .flatten()
-        .map(|x| x as u64)
+        .map(|x| x as IntLimb)
         .collect();
     assert!(numbers.len() == number.len());
 

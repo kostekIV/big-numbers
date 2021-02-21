@@ -1,46 +1,50 @@
+use crate::IntLimb;
+
 extern "C" {
-    pub(crate) fn add_two_slices(a: *const u64, b: *const u64, dest: *mut u64, n1: u64, n2: u64);
-    pub(crate) fn sub_two_slices(a: *const u64, b: *const u64, dest: *mut u64, n1: u64, n2: u64);
-    pub(crate) fn mul_two_slices(a: *const u64, b: *const u64, dest: *mut u64, n1: u64, n2: u64);
+    pub(crate) fn add_two_slices(a: *const IntLimb, b: *const IntLimb, dest: *mut IntLimb, n1: IntLimb, n2: IntLimb);
+    pub(crate) fn sub_two_slices(a: *const IntLimb, b: *const IntLimb, dest: *mut IntLimb, n1: IntLimb, n2: IntLimb);
+    pub(crate) fn mul_two_slices(a: *const IntLimb, b: *const IntLimb, dest: *mut IntLimb, n1: IntLimb, n2: IntLimb);
 }
 
 extern "C" {
-    pub(crate) fn add_const(dest: *mut u64, c: u64);
-    pub(crate) fn sub_const(dest: *mut u64, c: u64);
-    pub(crate) fn mul_const(dest: *mut u64, c: u64, n: u64);
-    pub(crate) fn div_const(dest: *mut u64, c: u64, n: u64) -> u64;
+    pub(crate) fn add_const(dest: *mut IntLimb, c: IntLimb);
+    pub(crate) fn sub_const(dest: *mut IntLimb, c: IntLimb);
+    pub(crate) fn mul_const(dest: *mut IntLimb, c: IntLimb, n: IntLimb);
+    pub(crate) fn div_const(dest: *mut IntLimb, c: IntLimb, n: IntLimb) -> IntLimb;
 }
 
 extern "C" {
-    pub(crate) fn cmp_slices(a: *const u64, b: *const u64, n: u64) -> i32;
+    pub(crate) fn cmp_slices(a: *const IntLimb, b: *const IntLimb, n: IntLimb) -> i32;
 }
 
 pub mod wrapped_ops {
-    pub(crate) fn unsafe_add_two_slices(a: &[u64], b: &[u64], d: &mut [u64]) {
+    use super::*;
+
+    pub(crate) fn unsafe_add_two_slices(a: &[IntLimb], b: &[IntLimb], d: &mut [IntLimb]) {
         let (n, m) = (a.len(), b.len());
         assert!(d.len() >= usize::max(n, m) + 1);
         unsafe {
             if n > m {
-                super::add_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as u64, m as u64);
+                super::add_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as IntLimb, m as IntLimb);
             } else {
-                super::add_two_slices(b.as_ptr(), a.as_ptr(), d.as_mut_ptr(), m as u64, n as u64);
+                super::add_two_slices(b.as_ptr(), a.as_ptr(), d.as_mut_ptr(), m as IntLimb, n as IntLimb);
             }
         }
     }
 
-    pub(crate) fn unsafe_sub_two_slices(a: &[u64], b: &[u64], d: &mut [u64]) {
+    pub(crate) fn unsafe_sub_two_slices(a: &[IntLimb], b: &[IntLimb], d: &mut [IntLimb]) {
         let (n, m) = (a.len(), b.len());
         assert!(d.len() >= usize::max(n, m) && n >= m);
         unsafe {
-            super::sub_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as u64, m as u64);
+            super::sub_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as IntLimb, m as IntLimb);
         }
     }
 
-    pub(crate) fn unsafe_mul_two_slices(a: &[u64], b: &[u64], d: &mut [u64]) {
+    pub(crate) fn unsafe_mul_two_slices(a: &[IntLimb], b: &[IntLimb], d: &mut [IntLimb]) {
         let (n, m) = (a.len(), b.len());
         assert!(d.len() >= n + m);
         unsafe {
-            super::mul_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as u64, m as u64);
+            super::mul_two_slices(a.as_ptr(), b.as_ptr(), d.as_mut_ptr(), n as IntLimb, m as IntLimb);
         }
     }
 }
@@ -73,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_adding_slices_overflow() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let a = [x, x, x, 0, x];
         let b = [1, 0, 0, x];
         let mut dest = [0, 0, 0, 0, 0, 0];
@@ -85,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_sub_slices_even_len() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let a = [0, 0, 0, 0, 0, 2];
         let b = [1, 1, 0, 0, 0, 1];
         let mut dest = [0, 0, 0, 0, 0, 0];
@@ -97,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_sub_slices_not_even_len() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let a = [0, 1, 2, 1, 0, 1, 1];
         let b = [1, 0, 3];
         let mut dest = [0, 0, 0, 0, 0, 0, 0];
@@ -120,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_mul_slices_not_even_len() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let a = [x, x, x];
         let b = [2, 1];
         let mut dest = [0, 0, 0, 0, 0];
@@ -147,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_mul_slices_of_nines_even_len() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let a = [x, x, x, x, x];
         let b = [x, x, x, x, x];
         let mut dest = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -159,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_mul_by_one() {
-        let x = u64::pow(2, 32);
+        let x = IntLimb::pow(2, 32);
         let a = [x - 1, x - 1, x - 1, x - 1];
         let b = [1];
         let mut dest = [0, 0, 0, 0, 0, 0];
@@ -173,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_adding_const() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let mut a = [x, x, x, 0];
         let b = 1;
 
@@ -186,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_sub_const() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let mut a = [0, 0, 0, 1];
         let b = 1;
 
@@ -199,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_sub_const_overflow() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let mut a = [1, 0, 0, 1];
         let b = 2;
 
@@ -236,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_mul_const_3() {
-        let x = u64::MAX;
+        let x = IntLimb::MAX;
         let mut a = [x, x, x, 0];
         let b = x;
 

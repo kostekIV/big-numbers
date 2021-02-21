@@ -20,8 +20,8 @@ macro_rules! op_test {
                 if let Ok(abr) = line {
                     let v: Vec<&str> = abr.split(',').collect();
 
-                    let a = Int::from((10u64, v[0]));
-                    let b = Int::from((10u64, v[1]));
+                    let a = Int::from((10, v[0]));
+                    let b = Int::from((10, v[1]));
 
                     assert_eq!(v[2], expr_identity!((&a $op &b).to_string()));
                 }
